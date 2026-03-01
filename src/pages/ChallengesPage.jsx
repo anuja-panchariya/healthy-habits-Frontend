@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { api, setAuthToken } from '../lib/api'
 import { toast } from 'sonner'
 
-// ✅ DARK MODE PERFECT LeaderboardRow
+//  DARK MODE PERFECT LeaderboardRow
 const LeaderboardRow = ({ entry, index }) => (
   <motion.div
     initial={{ opacity: 0, x: -20 }}
@@ -64,7 +64,7 @@ const LeaderboardRow = ({ entry, index }) => (
 export default function ChallengesPage() {
   const { getToken } = useAuth()
   
-  // ✅ ALL STATES DEFINED - NO ERRORS!
+  //  ALL STATES DEFINED 
   const [challenges, setChallenges] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -185,7 +185,7 @@ export default function ChallengesPage() {
     }
   }
 
-  // ✅ LOADING SCREEN
+  //  LOADING SCREEN
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
