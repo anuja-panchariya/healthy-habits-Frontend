@@ -232,7 +232,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
           >
-            <Card className="h-full bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-lg transition-all duration-300">
+            <Card className="h-full bg-card text-card-foreground border-border/40 shadow-sm hover:shadow-md transition-shadow duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center text-lg text-foreground">
                   <Bell className="w-5 h-5 mr-2 text-blue-600" />
