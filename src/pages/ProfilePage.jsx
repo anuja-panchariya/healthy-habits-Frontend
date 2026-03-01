@@ -1,3 +1,4 @@
+// ProfilePage.jsx - COMPLETE UPDATED CODE
 import React, { useEffect, useState } from 'react'
 import { useAuth, useUser, UserButton } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
@@ -28,39 +29,33 @@ export default function ProfilePage() {
   const [habits, setHabits] = useState([])
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [nextReminderTime, setNextReminderTime] = useState('')
+  const [sendingTestEmail, setSendingTestEmail] = useState(false)  // 🔥 NEW
+
+  // 🔥 USER EMAIL HELPER (Dashboard se same logic)
+  const getUserEmail = () => {
+    if (!isLoaded || !isSignedIn || !user) return 'No email'
+    return user.primaryEmailAddress?.emailAddress || 'No email'
+  }
 
   // FIXED: Clean separation - Username (name) on top, Email below
   const getUserName = () => {
     if (!isLoaded || !isSignedIn || !user) return 'User'
     
-    // Priority 1: fullName
     if (user.fullName) return user.fullName
-    
-    // Priority 2: firstName + lastName
     if (user.firstName) {
       return `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}`
     }
-    
-    // Priority 3: username if exists
     if (user.username) return user.username
-    
     return 'User'
   }
 
-  const getUserEmail = () => {
-    if (!isLoaded || !isSignedIn || !user) return 'No email'
-    
-    // Primary email address 
-    return user.primaryEmailAddress?.emailAddress || 'No email'
-  }
-
-  //  NOTIFICATION PERMISSION + SETUP
+  // NOTIFICATION PERMISSION + SETUP
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().then(permission => {
         if (permission === "granted") {
           setNotificationsEnabled(true)
-          toast.success(" Browser notifications enabled!")
+          toast.success("🔔 Browser notifications enabled!")
         }
       })
     }
@@ -147,21 +142,33 @@ export default function ProfilePage() {
       toast.success('🤖 AI recommendations loaded!')
     } catch (error) {
       console.error('AI Error:', error)
-      toast.success(' Recommendations ready!')
+      toast.success('Recommendations ready!')
     } finally {
       setLoadingAI(false)
     }
   }
 
+  // 🔥 FIXED: Test Email → REAL REMINDER API (Dashboard wala logic)
   const sendTestEmail = async () => {
+    setSendingTestEmail(true)
     try {
       const token = await getToken()
       setAuthToken(token)
-      const res = await api.post('/api/reminders/test')
-      toast.success(` Test email sent to ${res.data.sentTo || 'your email'}!`)
+      
+      // 🔥 SAME LOGIC AS DASHBOARD REMINDER BUTTON
+      const response = await api.post('/api/reminders/send', {
+        email: getUserEmail(),  // Clerk user email
+        habits: habits.length > 0 ? habits : [{ title: "Your first habit" }]  // Fallback
+      });
+      
+      toast.success(`✅ Test email sent to ${getUserEmail()}! Check inbox 📧`);
+      console.log("✅ Backend response:", response.data);
+      
     } catch (error) {
-      toast.error(' Email failed - check backend console')
-      console.error('Email error:', error)
+      console.error("Reminder error:", error);
+      toast.error("Failed to send email 😔");
+    } finally {
+      setSendingTestEmail(false);
     }
   }
 
@@ -173,13 +180,13 @@ export default function ProfilePage() {
     try {
       const token = await getToken()
       setAuthToken(token)
-      await api.post('/api/mood', { mood, notes: moodNotes })
-      toast.success(' Mood logged!')
+      await api.post('/api/moods', { mood, notes: moodNotes })  // FIXED endpoint
+      toast.success('😊 Mood logged!')
       setMood('')
       setMoodNotes('')
     } catch (error) {
       localStorage.setItem(`mood_${Date.now()}`, JSON.stringify({ mood, notes: moodNotes, date: new Date().toISOString() }))
-      toast.success(' Mood saved locally!')
+      toast.success('Mood saved locally!')
       setMood('')
       setMoodNotes('')
     }
@@ -224,8 +231,8 @@ export default function ProfilePage() {
         doc.setTextColor(100, 116, 139)
         doc.text('Keep tracking your habits! 🚀', 20, 280)
         
-        doc.save(`${userName.replace(/\s+/g, '_')}-habits-report-${Date.now()}.pdf`)
-        toast.success(` ${userName}'s PDF Downloaded!`)
+        doc.save(`${userName.replace(/\\s+/g, '_')}-habits-report-${Date.now()}.pdf`)
+        toast.success(`${userName}'s PDF Downloaded!`)
         setExportingPDF(false)
       }
     } catch (error) {
@@ -246,16 +253,16 @@ export default function ProfilePage() {
       link.href = url
       link.setAttribute('download', `habits_${new Date().toISOString().split('T')[0]}.csv`)
       link.click()
-      toast.success(' CSV exported!')
+      toast.success('📊 CSV exported!')
     } catch (error) {
-      const mockCSV = `Date,Habit,Status\\n${new Date().toLocaleDateString()},Water,Completed\\n${new Date().toLocaleDateString()},Meditation,Active`
+      const mockCSV = `Date,Habit,Status\n${new Date().toLocaleDateString()},Water,Completed\n${new Date().toLocaleDateString()},Meditation,Active`
       const blob = new Blob([mockCSV], { type: 'text/csv' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
       link.download = 'habits.csv'
       link.click()
-      toast.success(' CSV downloaded!')
+      toast.success('📊 CSV downloaded!')
     } finally {
       setExportingCSV(false)
     }
@@ -288,7 +295,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/*  FIXED Profile Card - Name on top, Email below */}
+          {/* Profile Card */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card>
               <CardHeader>
@@ -298,17 +305,12 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4">
                   <UserButton afterSignOutUrl="/" />
                   <div>
-                    {/*  USERNAME (Name) - Top line */}
                     <p className="font-semibold text-lg" data-testid="user-name">
                       {getUserName()}
                     </p>
-                    
-                    {/* EMAIL - Below name, smaller text */}
                     <p className="text-sm text-muted-foreground font-mono" data-testid="user-email">
                       {getUserEmail()}
                     </p>
-                    
-                    {/* User ID - Small */}
                     <p className="text-xs text-emerald-600">
                       ID: {user?.id?.slice(0, 8) || 'N/A'}...
                     </p>
@@ -318,7 +320,7 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* Rest of the cards remain same */}
+          {/* Habit Reminders */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card>
               <CardHeader>
@@ -357,6 +359,7 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
+          {/* Export Data */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <Card>
               <CardHeader>
@@ -406,6 +409,7 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
+          {/* 🔥 UPDATED: Email Reminders - REAL EMAILS */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Card>
               <CardHeader>
@@ -414,15 +418,44 @@ export default function ProfilePage() {
                   Email Reminders
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <Button onClick={sendTestEmail} className="w-full rounded-full" data-testid="test-email-btn">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Test Email
+              <CardContent className="space-y-4">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Test your daily habit reminder email:
+                  </p>
+                  <p className="font-mono bg-muted px-3 py-1 rounded-lg text-xs">
+                    📧 {getUserEmail()}
+                  </p>
+                </div>
+                
+                {/* 🔥 REAL EMAIL BUTTON - Same as Dashboard */}
+                <Button 
+                  onClick={sendTestEmail}
+                  disabled={sendingTestEmail || !getUserEmail() || getUserEmail() === 'No email'}
+                  className="w-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                  data-testid="test-email-btn"
+                >
+                  {sendingTestEmail ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      📧 Send Test Reminder Email
+                    </>
+                  )}
                 </Button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  Sends beautiful HTML email with your habits list
+                </p>
               </CardContent>
             </Card>
           </motion.div>
 
+          {/* AI Recommendations */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="md:col-span-2">
             <Card>
               <CardHeader>
@@ -473,6 +506,7 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
+          {/* Daily Mood */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="md:col-span-2">
             <Card>
               <CardHeader>
