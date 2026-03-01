@@ -29,7 +29,7 @@ export default function ProfilePage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [nextReminderTime, setNextReminderTime] = useState('')
 
-  // ✅ FIXED: Clean separation - Username (name) on top, Email below
+  // FIXED: Clean separation - Username (name) on top, Email below
   const getUserName = () => {
     if (!isLoaded || !isSignedIn || !user) return 'User'
     
@@ -50,17 +50,17 @@ export default function ProfilePage() {
   const getUserEmail = () => {
     if (!isLoaded || !isSignedIn || !user) return 'No email'
     
-    // Primary email address ✅
+    // Primary email address 
     return user.primaryEmailAddress?.emailAddress || 'No email'
   }
 
-  // ✅ NOTIFICATION PERMISSION + SETUP
+  //  NOTIFICATION PERMISSION + SETUP
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().then(permission => {
         if (permission === "granted") {
           setNotificationsEnabled(true)
-          toast.success("🔔 Browser notifications enabled!")
+          toast.success(" Browser notifications enabled!")
         }
       })
     }
@@ -106,7 +106,7 @@ export default function ProfilePage() {
           icon: '/favicon.ico',
           tag: 'habit-reminder'
         })
-        toast.success(`✅ Reminder sent for "${nextHabit.title}"!`)
+        toast.success(`Reminder sent for "${nextHabit.title}"!`)
       }
     }, 2 * 60 * 1000)
 
@@ -147,7 +147,7 @@ export default function ProfilePage() {
       toast.success('🤖 AI recommendations loaded!')
     } catch (error) {
       console.error('AI Error:', error)
-      toast.success('✅ Recommendations ready!')
+      toast.success(' Recommendations ready!')
     } finally {
       setLoadingAI(false)
     }
@@ -158,9 +158,9 @@ export default function ProfilePage() {
       const token = await getToken()
       setAuthToken(token)
       const res = await api.post('/api/reminders/test')
-      toast.success(`✅ Test email sent to ${res.data.sentTo || 'your email'}!`)
+      toast.success(` Test email sent to ${res.data.sentTo || 'your email'}!`)
     } catch (error) {
-      toast.error('❌ Email failed - check backend console')
+      toast.error(' Email failed - check backend console')
       console.error('Email error:', error)
     }
   }
@@ -174,12 +174,12 @@ export default function ProfilePage() {
       const token = await getToken()
       setAuthToken(token)
       await api.post('/api/mood', { mood, notes: moodNotes })
-      toast.success('✅ Mood logged!')
+      toast.success(' Mood logged!')
       setMood('')
       setMoodNotes('')
     } catch (error) {
       localStorage.setItem(`mood_${Date.now()}`, JSON.stringify({ mood, notes: moodNotes, date: new Date().toISOString() }))
-      toast.success('✅ Mood saved locally!')
+      toast.success(' Mood saved locally!')
       setMood('')
       setMoodNotes('')
     }
@@ -225,7 +225,7 @@ export default function ProfilePage() {
         doc.text('Keep tracking your habits! 🚀', 20, 280)
         
         doc.save(`${userName.replace(/\s+/g, '_')}-habits-report-${Date.now()}.pdf`)
-        toast.success(`✅ ${userName}'s PDF Downloaded!`)
+        toast.success(` ${userName}'s PDF Downloaded!`)
         setExportingPDF(false)
       }
     } catch (error) {
@@ -246,7 +246,7 @@ export default function ProfilePage() {
       link.href = url
       link.setAttribute('download', `habits_${new Date().toISOString().split('T')[0]}.csv`)
       link.click()
-      toast.success('✅ CSV exported!')
+      toast.success(' CSV exported!')
     } catch (error) {
       const mockCSV = `Date,Habit,Status\\n${new Date().toLocaleDateString()},Water,Completed\\n${new Date().toLocaleDateString()},Meditation,Active`
       const blob = new Blob([mockCSV], { type: 'text/csv' })
@@ -255,7 +255,7 @@ export default function ProfilePage() {
       link.href = url
       link.download = 'habits.csv'
       link.click()
-      toast.success('✅ CSV downloaded!')
+      toast.success(' CSV downloaded!')
     } finally {
       setExportingCSV(false)
     }
@@ -288,7 +288,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* ✅ FIXED Profile Card - Name on top, Email below */}
+          {/*  FIXED Profile Card - Name on top, Email below */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card>
               <CardHeader>
@@ -298,17 +298,17 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4">
                   <UserButton afterSignOutUrl="/" />
                   <div>
-                    {/* ✅ USERNAME (Name) - Top line */}
+                    {/*  USERNAME (Name) - Top line */}
                     <p className="font-semibold text-lg" data-testid="user-name">
                       {getUserName()}
                     </p>
                     
-                    {/* ✅ EMAIL - Below name, smaller text */}
+                    {/* EMAIL - Below name, smaller text */}
                     <p className="text-sm text-muted-foreground font-mono" data-testid="user-email">
                       {getUserEmail()}
                     </p>
                     
-                    {/* ✅ User ID - Small */}
+                    {/* User ID - Small */}
                     <p className="text-xs text-emerald-600">
                       ID: {user?.id?.slice(0, 8) || 'N/A'}...
                     </p>
