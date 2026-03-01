@@ -226,7 +226,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* Reminder Card - SAME UI */}
+          {/* ✅ FIXED: DAILY REMINDERS CARD - DARK MODE PERFECT */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -235,7 +235,7 @@ export default function Dashboard() {
             <Card className="h-full bg-card text-card-foreground border-border/40 shadow-sm hover:shadow-md transition-shadow duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center text-lg text-foreground">
-                  <Bell className="w-5 h-5 mr-2 text-blue-600" />
+                  <Bell className="w-5 h-5 mr-2 text-primary" />
                   Daily Reminders
                 </CardTitle>
               </CardHeader>
