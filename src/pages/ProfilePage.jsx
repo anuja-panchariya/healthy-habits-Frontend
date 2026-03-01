@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useAuth, UserButton } from '@clerk/clerk-react'
+import { useAuth, useUser, UserButton } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
 import { 
   Mail, Brain, Download, Smile, FileText, Activity, CheckCircle, 
@@ -17,7 +17,8 @@ import { api, setAuthToken } from '../lib/api'
 import { toast } from 'sonner'
 
 export default function ProfilePage() {
-  const { getToken, user } = useAuth()
+  const { getToken, user: authUser } = useAuth()
+  const { isLoaded, isSignedIn, user } = useUser() // ✅ Added useUser hook for real user data
   const [recommendations, setRecommendations] = useState([])
   const [loadingAI, setLoadingAI] = useState(false)
   const [mood, setMood] = useState('')
@@ -27,6 +28,29 @@ export default function ProfilePage() {
   const [habits, setHabits] = useState([])
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [nextReminderTime, setNextReminderTime] = useState('')
+
+  // ✅ Get REAL username from email or Clerk user data
+  const getDisplayName = () => {
+    if (!isLoaded || !isSignedIn || !user) return 'User'
+    
+    // Priority 1: Use primary email address (REAL email from Clerk)
+    if (user.primaryEmailAddress?.emailAddress) {
+      return user.primaryEmailAddress.emailAddress
+    }
+    
+    // Priority 2: Use fullName if available
+    if (user.fullName) {
+      return user.fullName
+    }
+    
+    // Priority 3: Use firstName + lastName
+    if (user.firstName) {
+      return user.firstName + (user.lastName ? ` ${user.lastName}` : '')
+    }
+    
+    // Fallback: Use email from authUser or generic
+    return authUser?.primaryEmailAddress?.emailAddress || 'User'
+  }
 
   // ✅ NOTIFICATION PERMISSION + SETUP
   useEffect(() => {
@@ -166,13 +190,13 @@ export default function ProfilePage() {
     }
   }
 
-  // ✅ REAL jsPDF - EVERY USER PERSONALIZED!
+  // ✅ REAL jsPDF - EVERY USER PERSONALIZED with REAL email!
   const exportPDF = async () => {
     setExportingPDF(true)
     
     try {
       await loadHabitsForPDF()
-      const userName = user?.fullName || 'User'
+      const realUserName = getDisplayName() // ✅ Uses real email/fullName
       
       const script = document.createElement('script')
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
@@ -187,7 +211,7 @@ export default function ProfilePage() {
         doc.text('HealthyHabits Tracker', 20, 25)
         
         doc.setFontSize(16)
-        doc.text(`${userName}'s Wellness Report`, 20, 42)
+        doc.text(`${realUserName}'s Wellness Report`, 20, 42)
         doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 20, 55)
         
         doc.setFontSize(12)
@@ -206,8 +230,8 @@ export default function ProfilePage() {
         doc.setTextColor(100, 116, 139)
         doc.text('Keep tracking your habits! 🚀', 20, 280)
         
-        doc.save(`${userName.replace(/\s+/g, '_')}-habits-report-${Date.now()}.pdf`)
-        toast.success(`✅ ${userName}'s PDF Downloaded!`)
+        doc.save(`${realUserName.replace(/\\s+/g, '_')}-habits-report-${Date.now()}.pdf`)
+        toast.success(`✅ ${realUserName}'s PDF Downloaded!`)
         setExportingPDF(false)
       }
     } catch (error) {
@@ -230,7 +254,7 @@ export default function ProfilePage() {
       link.click()
       toast.success('✅ CSV exported!')
     } catch (error) {
-      const mockCSV = `Date,Habit,Status\n${new Date().toLocaleDateString()},Water,Completed\n${new Date().toLocaleDateString()},Meditation,Active`
+      const mockCSV = `Date,Habit,Status\\n${new Date().toLocaleDateString()},Water,Completed\\n${new Date().toLocaleDateString()},Meditation,Active`
       const blob = new Blob([mockCSV], { type: 'text/csv' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -253,6 +277,15 @@ export default function ProfilePage() {
     }
   }
 
+  // ✅ Show loading state while user data loads
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background p-6" data-testid="profile-page">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -262,7 +295,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Profile Card */}
+          {/* Profile Card - ✅ NOW SHOWS REAL EMAIL */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card>
               <CardHeader>
@@ -272,8 +305,15 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4">
                   <UserButton afterSignOutUrl="/" />
                   <div>
-                    <p className="font-medium">{user?.fullName ||'Anuja Panchariya'}</p>
-                    <p className="text-sm text-muted-foreground"></p>
+                    <p className="font-medium text-lg break-all" data-testid="real-username">
+                      {getDisplayName()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {user?.primaryEmailAddress?.emailAddress || 'No email'}
+                    </p>
+                    <p className="text-xs text-emerald-600">
+                      ID: {user?.id?.slice(0, 8) || 'N/A'}...
+                    </p>
                   </div>
                 </div>
               </CardContent>
