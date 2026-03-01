@@ -272,7 +272,7 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4">
                   <UserButton afterSignOutUrl="/" />
                   <div>
-                    <p className="font-medium">{user?.fullName}</p>
+                    <p className="font-medium">{user?.fullName ||'Anuja Panchariya'}</p>
                     <p className="text-sm text-muted-foreground"></p>
                   </div>
                 </div>
