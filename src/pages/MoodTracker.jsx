@@ -174,36 +174,37 @@ export default function MoodTracker() {
           </Button>
 
           {/*  DARK INSIGHTS */}
-          {insights.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }} 
-              animate={{ opacity: 1, height: 'auto' }}
-              className="space-y-4 p-8 rounded-2xl bg-gradient-to-r from-slate-800/70 to-slate-900/70 border border-slate-700/50 backdrop-blur-xl shadow-2xl"
-            >
-              <h4 className="font-semibold text-xl flex items-center text-slate-100">
-                <Smile className="w-6 h-6 mr-3" />
-                Your Mood Insights
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {insights.map((insight, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="group text-center p-6 rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 hover:bg-slate-800/95 hover:shadow-2xl hover:border-emerald-500/50 transition-all duration-300"
-                  >
-                    <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">{insight.emoji}</div>
-                    <div className="font-black text-2xl bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-2">
-                      {insight.title}
-                    </div>
-                    <div className="text-sm uppercase tracking-wider text-slate-300 font-semibold">{insight.value}</div>
-                    <p className="text-xs text-slate-500 mt-2">{insight.description}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          )}
+          // Replace Insights section:
+{insights.length > 0 && (
+  <motion.div 
+    initial={{ opacity: 0, height: 0 }} 
+    animate={{ opacity: 1, height: 'auto' }}
+    className="space-y-4 p-8 rounded-2xl bg-gradient-to-r from-emerald-900/70 to-emerald-800/70 border border-emerald-700/50 backdrop-blur-xl shadow-2xl"
+  >
+    <h4 className="font-semibold text-xl flex items-center text-slate-100">
+      <Smile className="w-6 h-6 mr-3" />
+      Your Mood Insights
+    </h4>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {insights.map((insight, idx) => (
+        <motion.div
+          key={idx}
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: idx * 0.1 }}
+          className="group text-center p-6 rounded-2xl bg-emerald-900/80 backdrop-blur-sm border border-emerald-700/50 hover:bg-emerald-900/95 hover:shadow-2xl hover:border-emerald-500/70 transition-all duration-300"
+        >
+          <div className="text-3xl mb-3 group-hover:scale-110 transition-transform text-emerald-400">{insight.emoji}</div>
+          <div className="font-black text-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 bg-clip-text text-transparent mb-2">
+            {insight.title}
+          </div>
+          <div className="text-sm uppercase tracking-wider text-emerald-300 font-semibold">{insight.value}</div>
+          <p className="text-xs text-emerald-400 mt-2">{insight.description}</p>
+        </motion.div>
+      ))}
+    </div>
+  </motion.div>
+)}
 
           {/*  DARK HISTORY */}
           {moodHistory.length > 0 && (
@@ -247,4 +248,5 @@ export default function MoodTracker() {
     </motion.div>
   )
 }
+
 
