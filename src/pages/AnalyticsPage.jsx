@@ -15,7 +15,7 @@ export default function AnalyticsPage() {
 
  /* eslint-disable react-hooks/exhaustive-deps */
 useEffect(() => {
-  loadAnalytics()  // ✅ CORRECT FUNCTION!
+  loadAnalytics()  
 }, [])
 /* eslint-enable react-hooks/exhaustive-deps */
 
