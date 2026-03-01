@@ -20,7 +20,7 @@ export default function MoodTracker() {
   const [moodHistory, setMoodHistory] = useState([])
   const [insights, setInsights] = useState([])
 
-  // 🔥 MOOD HELPER FUNCTIONS (UNCHANGED)
+  //  MOOD HELPER FUNCTIONS (UNCHANGED)
   const getMoodEmoji = (mood) => {
     const emojis = { great: '😄', good: '🙂', okay: '😐', bad: '☹️', terrible: '😢' }
     return emojis[mood] || '😐'
@@ -65,7 +65,7 @@ export default function MoodTracker() {
     return 'General reflection'
   }
 
-  // ✅ ESLINT FIXED - useCallback
+  //  ESLINT FIXED - useCallback
   const analyzeMoodInsights = useCallback((history) => {
     if (!history.length) return []
     
@@ -104,7 +104,7 @@ export default function MoodTracker() {
     }
   }
 
-  // ✅ ESLINT FIXED useEffect
+  //  ESLINT FIXED useEffect
   useEffect(() => {
     const savedMoods = localStorage.getItem('moodHistory')
     if (savedMoods) {
@@ -173,7 +173,7 @@ export default function MoodTracker() {
             )}
           </Button>
 
-          {/* 🔥 DARK INSIGHTS */}
+          {/*  DARK INSIGHTS */}
           {insights.length > 0 && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }} 
@@ -205,7 +205,7 @@ export default function MoodTracker() {
             </motion.div>
           )}
 
-          {/* 🔥 DARK HISTORY */}
+          {/*  DARK HISTORY */}
           {moodHistory.length > 0 && (
             <div className="space-y-4">
               <h4 className="font-semibold text-xl flex items-center text-slate-100">
@@ -247,3 +247,4 @@ export default function MoodTracker() {
     </motion.div>
   )
 }
+
