@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { Smile } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Badge } from '../components/ui/badge'
@@ -20,7 +19,7 @@ export default function MoodTracker() {
   const [moodHistory, setMoodHistory] = useState([])
   const [insights, setInsights] = useState([])
 
-  //  MOOD HELPER FUNCTIONS (UNCHANGED)
+  //  MOOD HELPER FUNCTIONS
   const getMoodEmoji = (mood) => {
     const emojis = { great: '😄', good: '🙂', okay: '😐', bad: '☹️', terrible: '😢' }
     return emojis[mood] || '😐'
@@ -29,7 +28,7 @@ export default function MoodTracker() {
   const getMoodColor = (mood) => {
     const colors = {
       great: 'from-emerald-400 to-green-500',
-      good: 'from-blue-400 to-cyan-500',
+      good: 'from-emerald-400 to-emerald-500',
       okay: 'from-yellow-400 to-orange-500',
       bad: 'from-orange-500 to-red-500',
       terrible: 'from-red-500 to-pink-600'
@@ -104,7 +103,7 @@ export default function MoodTracker() {
     }
   }
 
-  //  ESLINT FIXED useEffect
+  // ESLINT FIXED useEffect
   useEffect(() => {
     const savedMoods = localStorage.getItem('moodHistory')
     if (savedMoods) {
@@ -157,7 +156,7 @@ export default function MoodTracker() {
           <Button 
             onClick={logMood} 
             disabled={!mood || loadingMood}
-            className="w-full h-14 rounded-full text-lg font-medium bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-xl" 
+            className="w-full h-14 rounded-full text-lg font-medium bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-xl" 
             data-testid="log-mood-btn"
           >
             {loadingMood ? (
@@ -173,49 +172,48 @@ export default function MoodTracker() {
             )}
           </Button>
 
-          {/*  DARK INSIGHTS */}
-          // Replace Insights section:
-{insights.length > 0 && (
-  <motion.div 
-    initial={{ opacity: 0, height: 0 }} 
-    animate={{ opacity: 1, height: 'auto' }}
-    className="space-y-4 p-8 rounded-2xl bg-gradient-to-r from-emerald-900/70 to-emerald-800/70 border border-emerald-700/50 backdrop-blur-xl shadow-2xl"
-  >
-    <h4 className="font-semibold text-xl flex items-center text-slate-100">
-      <Smile className="w-6 h-6 mr-3" />
-      Your Mood Insights
-    </h4>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {insights.map((insight, idx) => (
-        <motion.div
-          key={idx}
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: idx * 0.1 }}
-          className="group text-center p-6 rounded-2xl bg-emerald-900/80 backdrop-blur-sm border border-emerald-700/50 hover:bg-emerald-900/95 hover:shadow-2xl hover:border-emerald-500/70 transition-all duration-300"
-        >
-          <div className="text-3xl mb-3 group-hover:scale-110 transition-transform text-emerald-400">{insight.emoji}</div>
-          <div className="font-black text-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 bg-clip-text text-transparent mb-2">
-            {insight.title}
-          </div>
-          <div className="text-sm uppercase tracking-wider text-emerald-300 font-semibold">{insight.value}</div>
-          <p className="text-xs text-emerald-400 mt-2">{insight.description}</p>
-        </motion.div>
-      ))}
-    </div>
-  </motion.div>
-)}
+          {/*  DARK EMERALD INSIGHTS */}
+          {insights.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }} 
+              animate={{ opacity: 1, height: 'auto' }}
+              className="space-y-4 p-8 rounded-2xl bg-gradient-to-r from-emerald-900/70 to-emerald-800/70 border border-emerald-700/50 backdrop-blur-xl shadow-2xl"
+            >
+              <h4 className="font-semibold text-xl flex items-center text-slate-100">
+                <Smile className="w-6 h-6 mr-3" />
+                Your Mood Insights
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {insights.map((insight, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="group text-center p-6 rounded-2xl bg-emerald-900/80 backdrop-blur-sm border border-emerald-700/50 hover:bg-emerald-900/95 hover:shadow-2xl hover:border-emerald-500/70 transition-all duration-300"
+                  >
+                    <div className="text-3xl mb-3 group-hover:scale-110 transition-transform text-emerald-400">{insight.emoji}</div>
+                    <div className="font-black text-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 bg-clip-text text-transparent mb-2">
+                      {insight.title}
+                    </div>
+                    <div className="text-sm uppercase tracking-wider text-emerald-300 font-semibold">{insight.value}</div>
+                    <p className="text-xs text-emerald-400 mt-2">{insight.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/*  DARK HISTORY */}
           {moodHistory.length > 0 && (
             <div className="space-y-4">
               <h4 className="font-semibold text-xl flex items-center text-slate-100">
                 Recent Moods
-                <span className="ml-3 text-sm bg-slate-800/70 px-3 py-1.5 rounded-full text-slate-300 border border-slate-700 font-medium">
+                <span className="ml-3 text-sm bg-emerald-900/70 px-3 py-1.5 rounded-full text-emerald-300 border border-emerald-700 font-medium">
                   {moodHistory.length}
                 </span>
               </h4>
-              <div className="max-h-60 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+              <div className="max-h-60 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-emerald-800 scrollbar-track-emerald-900">
                 {moodHistory.slice(0, 5).map((entry) => (
                   <motion.div
                     key={entry.id}
@@ -229,7 +227,7 @@ export default function MoodTracker() {
                         <span className="font-semibold text-slate-100 text-lg drop-shadow-sm">
                           {getMoodEmoji(entry.mood)} {entry.mood.charAt(0).toUpperCase() + entry.mood.slice(1)}
                         </span>
-                        <Badge variant="secondary" className="text-xs bg-slate-700/50 border-slate-600 text-slate-300 px-3 py-1">
+                        <Badge variant="secondary" className="text-xs bg-emerald-900/50 border-emerald-700 text-emerald-300 px-3 py-1">
                           {entry.habitImpact}
                         </Badge>
                       </div>
@@ -248,5 +246,3 @@ export default function MoodTracker() {
     </motion.div>
   )
 }
-
-
