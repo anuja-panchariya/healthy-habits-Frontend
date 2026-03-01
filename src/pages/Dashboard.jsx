@@ -1,3 +1,22 @@
+<<<<<<< HEAD
+import React from 'react'
+import { motion } from 'framer-motion'
+import DashboardHero from './DashboardHero'
+import DashboardGrid from './DashboardGrid'
+import CreateHabitDialog from '../components/CreateHabitDialog'
+
+export default function Dashboard() {
+  return (
+    <div className="min-h-screen bg-background text-foreground p-6" data-testid="dashboard">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <DashboardHero />
+        <DashboardGrid />
+      </div>
+      <CreateHabitDialog 
+        open={false} 
+        onClose={() => {}} 
+        onSuccess={() => {}} 
+=======
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
@@ -428,7 +447,8 @@ export default function Dashboard() {
         open={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
         onSuccess={handleCreateSuccess}  //  Redux addHabit()
+>>>>>>> ec1a3b340244c832793b13282ae7c0d81d613555
       />
     </div>
-  );
+  )
 }

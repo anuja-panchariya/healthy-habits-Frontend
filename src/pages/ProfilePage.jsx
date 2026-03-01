@@ -1,3 +1,38 @@
+<<<<<<< HEAD
+import React from 'react'
+import { motion } from 'framer-motion'
+import ProfileHero from './ProfileHero'
+import ProfileGrid from './ProfileGrid'
+import MoodTracker from './MoodTracker'
+
+export default function ProfilePage() {
+  return (
+    <div className="min-h-screen bg-background p-6" data-testid="profile-page">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <ProfileHero />
+        <ProfileGrid />
+        <MoodTracker />
+      </div>
+    </div>
+  )
+}
+import React from 'react'
+import { motion } from 'framer-motion'
+import ProfileHero from './ProfileHero'
+import ProfileGrid from './ProfileGrid'
+import MoodTracker from './MoodTracker'
+
+export default function ProfilePage() {
+  return (
+    <div className="min-h-screen bg-background p-6" data-testid="profile-page">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <ProfileHero />
+        <ProfileGrid />
+        <MoodTracker />
+      </div>
+    </div>
+  )
+=======
 import React, { useEffect, useState } from 'react'
 import { useAuth, useUser, UserButton } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
@@ -650,4 +685,5 @@ Log Mood
 </div>
 </div>
 )
+>>>>>>> ec1a3b340244c832793b13282ae7c0d81d613555
 }
