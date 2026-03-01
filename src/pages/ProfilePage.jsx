@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 
 export default function ProfilePage() {
   const { getToken, user: authUser } = useAuth()
-  const { isLoaded, isSignedIn, user } = useUser() // ✅ Added useUser hook for real user data
+  const { isLoaded, isSignedIn, user } = useUser()
   const [recommendations, setRecommendations] = useState([])
   const [loadingAI, setLoadingAI] = useState(false)
   const [mood, setMood] = useState('')
@@ -29,27 +29,29 @@ export default function ProfilePage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [nextReminderTime, setNextReminderTime] = useState('')
 
-  // ✅ Get REAL username from email or Clerk user data
-  const getDisplayName = () => {
+  // ✅ FIXED: Clean separation - Username (name) on top, Email below
+  const getUserName = () => {
     if (!isLoaded || !isSignedIn || !user) return 'User'
     
-    // Priority 1: Use primary email address (REAL email from Clerk)
-    if (user.primaryEmailAddress?.emailAddress) {
-      return user.primaryEmailAddress.emailAddress
-    }
+    // Priority 1: fullName
+    if (user.fullName) return user.fullName
     
-    // Priority 2: Use fullName if available
-    if (user.fullName) {
-      return user.fullName
-    }
-    
-    // Priority 3: Use firstName + lastName
+    // Priority 2: firstName + lastName
     if (user.firstName) {
-      return user.firstName + (user.lastName ? ` ${user.lastName}` : '')
+      return `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}`
     }
     
-    // Fallback: Use email from authUser or generic
-    return authUser?.primaryEmailAddress?.emailAddress || 'User'
+    // Priority 3: username if exists
+    if (user.username) return user.username
+    
+    return 'User'
+  }
+
+  const getUserEmail = () => {
+    if (!isLoaded || !isSignedIn || !user) return 'No email'
+    
+    // Primary email address ✅
+    return user.primaryEmailAddress?.emailAddress || 'No email'
   }
 
   // ✅ NOTIFICATION PERMISSION + SETUP
@@ -63,12 +65,10 @@ export default function ProfilePage() {
       })
     }
     
-    // Load saved notification preference
     const saved = localStorage.getItem('habit-reminders-enabled')
     if (saved === 'true') setNotificationsEnabled(true)
   }, [])
 
-  // ✅ LOAD HABITS FOR PDF + REMINDERS
   const loadHabitsForPDF = async () => {
     try {
       const token = await getToken()
@@ -80,7 +80,6 @@ export default function ProfilePage() {
     }
   }
 
-  // ✅ HABIT REMINDER SYSTEM - LOCALHOST READY!
   const scheduleHabitReminder = () => {
     if (!notificationsEnabled || !habits.length) {
       toast.error("Enable notifications & add habits first!")
@@ -89,9 +88,8 @@ export default function ProfilePage() {
 
     const now = new Date()
     const nextHabit = habits[Math.floor(Math.random() * habits.length)]
-    const reminderTime = new Date(now.getTime() + 2 * 60 * 1000) // 2 minutes later for testing
+    const reminderTime = new Date(now.getTime() + 2 * 60 * 1000)
     
-    // Save reminder in localStorage
     const reminders = JSON.parse(localStorage.getItem('habit-reminders') || '[]')
     reminders.push({
       id: Date.now(),
@@ -101,7 +99,6 @@ export default function ProfilePage() {
     })
     localStorage.setItem('habit-reminders', JSON.stringify(reminders))
     
-    // Schedule notification
     setTimeout(() => {
       if (Notification.permission === 'granted') {
         new Notification('⏰ Habit Reminder!', {
@@ -111,13 +108,12 @@ export default function ProfilePage() {
         })
         toast.success(`✅ Reminder sent for "${nextHabit.title}"!`)
       }
-    }, 2 * 60 * 1000) // 2 min test
+    }, 2 * 60 * 1000)
 
     setNextReminderTime(reminderTime.toLocaleTimeString('en-IN'))
     toast.success(`⏰ "${nextHabit.title}" reminder set for ${reminderTime.toLocaleTimeString('en-IN')}`)
   }
 
-  // ✅ CHECK FOR PENDING REMINDERS
   useEffect(() => {
     const checkReminders = () => {
       const reminders = JSON.parse(localStorage.getItem('habit-reminders') || '[]')
@@ -137,11 +133,10 @@ export default function ProfilePage() {
       })
     }
 
-    const interval = setInterval(checkReminders, 30000) // Check every 30s
+    const interval = setInterval(checkReminders, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  // ✅ FIXED: Real AI + Error handling
   const getRecommendations = async () => {
     setLoadingAI(true)
     try {
@@ -190,13 +185,12 @@ export default function ProfilePage() {
     }
   }
 
-  // ✅ REAL jsPDF - EVERY USER PERSONALIZED with REAL email!
   const exportPDF = async () => {
     setExportingPDF(true)
     
     try {
       await loadHabitsForPDF()
-      const realUserName = getDisplayName() // ✅ Uses real email/fullName
+      const userName = getUserName()
       
       const script = document.createElement('script')
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
@@ -211,12 +205,12 @@ export default function ProfilePage() {
         doc.text('HealthyHabits Tracker', 20, 25)
         
         doc.setFontSize(16)
-        doc.text(`${realUserName}'s Wellness Report`, 20, 42)
+        doc.text(`${userName}'s Wellness Report`, 20, 42)
         doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 20, 55)
         
         doc.setFontSize(12)
         doc.text(`Total Habits: ${habits.length}`, 20, 75)
-        doc.text(`User ID: ${user?.id || 'N/A'}`, 20, 85)
+        doc.text(`User ID: ${user?.id?.slice(0, 8) || 'N/A'}...`, 20, 85)
         
         doc.text('Your Habits:', 20, 105)
         habits.slice(0, 8).forEach((habit, i) => {
@@ -230,8 +224,8 @@ export default function ProfilePage() {
         doc.setTextColor(100, 116, 139)
         doc.text('Keep tracking your habits! 🚀', 20, 280)
         
-        doc.save(`${realUserName.replace(/\\s+/g, '_')}-habits-report-${Date.now()}.pdf`)
-        toast.success(`✅ ${realUserName}'s PDF Downloaded!`)
+        doc.save(`${userName.replace(/\s+/g, '_')}-habits-report-${Date.now()}.pdf`)
+        toast.success(`✅ ${userName}'s PDF Downloaded!`)
         setExportingPDF(false)
       }
     } catch (error) {
@@ -277,7 +271,6 @@ export default function ProfilePage() {
     }
   }
 
-  // ✅ Show loading state while user data loads
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -295,7 +288,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Profile Card - ✅ NOW SHOWS REAL EMAIL */}
+          {/* ✅ FIXED Profile Card - Name on top, Email below */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card>
               <CardHeader>
@@ -305,12 +298,17 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4">
                   <UserButton afterSignOutUrl="/" />
                   <div>
-                    <p className="font-medium text-lg break-all" data-testid="real-username">
-                      {getDisplayName()}
+                    {/* ✅ USERNAME (Name) - Top line */}
+                    <p className="font-semibold text-lg" data-testid="user-name">
+                      {getUserName()}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      {user?.primaryEmailAddress?.emailAddress || 'No email'}
+                    
+                    {/* ✅ EMAIL - Below name, smaller text */}
+                    <p className="text-sm text-muted-foreground font-mono" data-testid="user-email">
+                      {getUserEmail()}
                     </p>
+                    
+                    {/* ✅ User ID - Small */}
                     <p className="text-xs text-emerald-600">
                       ID: {user?.id?.slice(0, 8) || 'N/A'}...
                     </p>
@@ -320,7 +318,7 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* ✅ NEW REMINDER NOTIFICATIONS CARD */}
+          {/* Rest of the cards remain same */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card>
               <CardHeader>
@@ -359,7 +357,6 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* Export */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <Card>
               <CardHeader>
@@ -409,7 +406,6 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* Email */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Card>
               <CardHeader>
@@ -427,7 +423,6 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* AI Recommendations */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="md:col-span-2">
             <Card>
               <CardHeader>
@@ -478,7 +473,6 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* Mood Tracker */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="md:col-span-2">
             <Card>
               <CardHeader>
