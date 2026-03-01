@@ -15,20 +15,35 @@ import { Progress } from "../components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { api, setAuthToken } from "../lib/api";
 import { toast } from "sonner";
+import { useSelector, useDispatch } from 'react-redux'  // REDUX
+import { 
+  setHabits, 
+  setLoading, 
+  setError, 
+  addHabit 
+} from "../store/habitsSlice";  //  REDUX
 import CreateHabitDialog from "../components/CreateHabitDialog";
 import WellnessScore from "../components/WellnessScore";
 
 export default function Dashboard() {
   const { getToken, userId } = useAuth();
-  const [habits, setHabits] = useState([]);
+  const dispatch = useDispatch();  //  REDUX
+  
+  //  REDUX STATE 
+  const { habits: reduxHabits, loading: reduxLoading, error: reduxError } = 
+    useSelector((state) => state.habits);
+  
+  // Local states (Not in Redux - component specific)
   const [wellnessScore, setWellnessScore] = useState(0);
   const [streaks, setStreaks] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [loadingReminder, setLoadingReminder] = useState(false);
 
-  // ✅ FIXED: REMINDER 404 ERROR - Mock Success
+  // REDUX loadData() - FULLY INTEGRATED
   const loadData = useCallback(async () => {
+    dispatch(setLoading(true));  //  REDUX
+    dispatch(setError(null));    // REDUX
+
     try {
       const token = await getToken();
       setAuthToken(token);
@@ -39,12 +54,14 @@ export default function Dashboard() {
         api.get("/api/analytics/streaks"),
       ]);
 
-      setHabits(
-        habitsRes.status === "fulfilled" && Array.isArray(habitsRes.value?.data)
-          ? habitsRes.value.data
-          : []
-      );
+      //  REDUX: Habits to Redux store
+      if (habitsRes.status === "fulfilled" && Array.isArray(habitsRes.value?.data)) {
+        dispatch(setHabits(habitsRes.value.data));  //  REDUX
+      } else {
+        dispatch(setHabits([]));  //  REDUX
+      }
 
+      // Local state updates (Not in Redux)
       setWellnessScore(
         wellnessRes.status === "fulfilled"
           ? wellnessRes.value?.data?.score || 0
@@ -66,13 +83,14 @@ export default function Dashboard() {
 
     } catch (error) {
       console.error("Error loading data:", error);
-      setHabits([]);
+      dispatch(setError(error.message));  //  REDUX ERROR
+      dispatch(setHabits([]));            //  REDUX
       setWellnessScore(0);
       setStreaks([]);
     } finally {
-      setLoading(false);
+      dispatch(setLoading(false));  //  REDUX
     }
-  }, [getToken]);
+  }, [dispatch, getToken]);  //  dispatch added to deps
 
   useEffect(() => {
     if (userId) {
@@ -80,29 +98,43 @@ export default function Dashboard() {
     }
   }, [userId, loadData]);
 
-  // ✅ FIXED: Auto reminders without 404
+  //  REDUX: Auto reminders (uses reduxHabits)
   useEffect(() => {
     const interval = setInterval(() => {
-      if (habits.length > 0 && Notification.permission === "granted") {
-        const habit = habits[0];
+      if (reduxHabits.length > 0 && Notification.permission === "granted") {
+        const habit = reduxHabits[0];
         new Notification("⏰ Habit Reminder", {
           body: `Time for ${habit.title || 'your habit'}!`,
           icon: "/favicon.ico"
         });
       }
-    }, 60000); // 1 minute demo reminders
+    }, 60000);
 
     return () => clearInterval(interval);
-  }, [habits]);
+  }, [reduxHabits]);  //  reduxHabits instead of habits
 
+  //  REDUX: handleLogHabit with optimistic update
   const handleLogHabit = async (habitId) => {
     try {
       const token = await getToken();
       setAuthToken(token);
+      
+      // Optimistic UI update
+      const updatedHabits = reduxHabits.map(habit => 
+        habit.id === habitId 
+          ? { ...habit, loggedToday: true }
+          : habit
+      );
+      dispatch(setHabits(updatedHabits));  //  REDUX OPTIMISTIC
+
       await api.post(`/api/habits/${habitId}/log`);
-      toast.success("✅ Habit logged!");
+      toast.success(" Habit logged!");
+      
+      // Final refresh
       loadData();
     } catch (error) {
+      // Revert optimistic update on error
+      loadData();
       if (error.response?.status === 409) {
         toast.info("Already logged today");
       } else {
@@ -111,34 +143,43 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ FIXED: REMINDER BUTTON - No 404!
+  //  REDUX: Create dialog onSuccess with addHabit
+  const handleCreateSuccess = (newHabit) => {
+    dispatch(addHabit(newHabit));  //  REDUX OPTIMISTIC ADD
+    toast.success("🎉 New habit created!");
+  };
+
   const sendDailyReminder = async () => {
     setLoadingReminder(true);
     setTimeout(() => {
-      toast.success(`✅ Reminders scheduled for ${habits.length || 0} habits!`);
+      toast.success(` Reminders scheduled for ${reduxHabits.length || 0} habits!`);
       setLoadingReminder(false);
       
-      // Browser notification
       if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
       }
     }, 1000);
   };
 
-  if (loading) {
+  //  REDUX LOADING SCREEN
+  if (reduxLoading) {  //  reduxLoading instead of loading
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading your habits...</p>
+        </div>
       </div>
     );
   }
 
-  const todayHabits = Array.isArray(habits) ? habits.slice(0, 5) : [];
+  //  Use reduxHabits instead of local state
+  const todayHabits = Array.isArray(reduxHabits) ? reduxHabits.slice(0, 5) : [];
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6" data-testid="dashboard">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header - SAME UI */}
+        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="font-serif font-light text-4xl tracking-tight mb-2 text-foreground">
@@ -154,7 +195,6 @@ export default function Dashboard() {
             >
               <Plus className="w-4 h-4 mr-2" /> New Habit
             </Button>
-            {/* ✅ FIXED REMINDER BUTTON */}
             <Button
               onClick={sendDailyReminder}
               disabled={loadingReminder}
@@ -176,9 +216,28 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Bento Grid - SAME UI, FIXED DARK MODE */}
+        {/*  REDUX ERROR BANNER */}
+        {reduxError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-destructive/10 border border-destructive/30 rounded-2xl text-destructive"
+          >
+            <p className="font-medium">⚠️ {reduxError}</p>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={loadData}
+              className="mt-2 h-8"
+            >
+              Retry
+            </Button>
+          </motion.div>
+        )}
+
+        {/* Bento Grid - SAME UI */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Wellness Score - SAME */}
+          {/* Wellness Score */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -188,7 +247,7 @@ export default function Dashboard() {
             <WellnessScore score={wellnessScore} />
           </motion.div>
 
-          {/* Quick Stats - SAME UI, FIXED TEXT */}
+          {/* Quick Stats */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -205,7 +264,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-muted-foreground">Total Habits</span>
-                    <span className="font-medium text-foreground">{habits.length}</span>
+                    <span className="font-medium text-foreground">{reduxHabits.length}</span>
                   </div>
                 </div>
                 <div>
@@ -226,7 +285,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* ✅ FIXED: DAILY REMINDERS CARD - DARK MODE PERFECT */}
+          {/* Daily Reminders */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -263,8 +322,8 @@ export default function Dashboard() {
                   )}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  {habits.length > 0 
-                    ? `${habits.length} habit${habits.length !== 1 ? 's' : ''}` 
+                  {reduxHabits.length > 0 
+                    ? `${reduxHabits.length} habit${reduxHabits.length !== 1 ? 's' : ''}` 
                     : 'Create habits first'
                   }
                 </p>
@@ -272,7 +331,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* Today's Habits - SAME UI */}
+          {/* Today's Habits */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -313,7 +372,7 @@ export default function Dashboard() {
                         className="rounded-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white"
                         disabled={habit.loggedToday || habit.completed}
                       >
-                        {habit.loggedToday ? "✅ Done" : "Log"}
+                        {habit.loggedToday ? " Done" : "Log"}
                       </Button>
                     </div>
                   ))
@@ -322,7 +381,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* Streaks - SAME UI */}
+          {/* Streaks */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -364,10 +423,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/*  REDUX CreateHabitDialog */}
       <CreateHabitDialog
         open={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
-        onSuccess={loadData}
+        onSuccess={handleCreateSuccess}  //  Redux addHabit()
       />
     </div>
   );
