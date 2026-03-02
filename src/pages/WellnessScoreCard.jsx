@@ -12,7 +12,6 @@ export default function WellnessScoreCard({ score = 0 }) {
       <CardContent className="text-center space-y-6">
         <div className="text-5xl font-black">{score}%</div>
         
-        {/* Progress Ring */}
         <svg width="200" height="200" viewBox="0 0 200 200">
           <circle cx="100" cy="100" r="80" fill="none" stroke="#e5e7eb" strokeWidth="20"/>
           <circle 
