@@ -15,7 +15,8 @@ export const habitsSlice = createSlice({
     removeHabit: (state, action) => { state.habits = state.habits.filter(h => h.id !== action.payload) },
     setLoading: (state, action) => { state.loading = action.payload },
     setError: (state, action) => { state.error = action.payload },
-    
+    setWellnessScore: (state, action) => { state.wellnessScore = action.payload},
+
     fetchHabits: (state) => { 
       state.loading = true 
       state.error = null 
