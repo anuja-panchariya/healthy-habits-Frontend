@@ -22,9 +22,11 @@ export default function DashboardGrid() {
       dispatch(setLoading(true))
       const token = await getToken()
       
-      console.log('🔍 API URL:', `${import.meta.env.VITE_API_URL}/habits`) // DEBUG
+      // ✅ CRACO FIX: window.ENV instead of import.meta.env
+      const API_URL = window.ENV?.VITE_API_URL || 'https://healthy-habits-be-1.onrender.com/api'
+      console.log('🔍 API URL:', `${API_URL}/habits`)
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/habits`, {
+      const response = await fetch(`${API_URL}/habits`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
