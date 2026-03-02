@@ -1,4 +1,3 @@
-// src/pages/DashboardGrid.jsx - COMPLETE WORKING VERSION
 import React, { useEffect, useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@clerk/clerk-react'
@@ -7,7 +6,6 @@ import WellnessScoreCard from '../components/WellnessScoreCard'
 import QuickStatsCard from '../components/QuickStatsCard'
 import TodaysHabitsCard from '../components/TodaysHabitsCard'
 
-// ✅ DEFAULT EXPORT - THIS WAS MISSING!
 export default function DashboardGrid() {
   const { getToken, userId } = useAuth()
   const [habits, setHabits] = useState([])
@@ -88,3 +86,4 @@ export default function DashboardGrid() {
     </div>
   )
 }
+
