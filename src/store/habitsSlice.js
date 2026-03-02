@@ -1,3 +1,11 @@
+import { createSlice } from '@reduxjs/toolkit' 
+const initialState = { 
+  habits: [],
+  loading: false,
+  error: null,
+  wellnessScore: 0
+}
+
 export const habitsSlice = createSlice({
   name: 'habits',
   initialState,
@@ -20,3 +28,5 @@ export const habitsSlice = createSlice({
 })
 
 export const { setHabits, addHabit, removeHabit, setLoading, setError, fetchHabits, logHabit } = habitsSlice.actions
+
+export default habitsSlice.reducer  // Optional
