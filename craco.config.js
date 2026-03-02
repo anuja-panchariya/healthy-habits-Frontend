@@ -1,5 +1,5 @@
-// craco.config.js
 const path = require("path");
+const webpack = require('webpack');  // ← ADD
 
 module.exports = {
   eslint: {
@@ -28,6 +28,16 @@ module.exports = {
           "**/public/**",
         ],
       };
+
+      // ✅ CRITICAL: VITE_API_URL client-side expose!
+      webpackConfig.plugins.push(
+        new webpack.DefinePlugin({
+          'window.ENV': JSON.stringify({
+            VITE_API_URL: process.env.VITE_API_URL || 'https://healthy-habits-be-1.onrender.com/api'
+          })
+        })
+      );
+
       return webpackConfig;
     },
   },
