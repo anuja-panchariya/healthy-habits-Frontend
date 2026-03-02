@@ -5,13 +5,12 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import { api, setAuthToken } from '../lib/api'
 import { toast } from 'sonner'
 
 export default function CreateHabitDialog({ open, onClose, onSuccess }) {
   const { getToken } = useAuth()
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',        // ✅ Backend expect 'name' NOT 'title'
     category: '',
     goal_type: 'daily',
     goal_value: '1'
@@ -32,15 +31,37 @@ export default function CreateHabitDialog({ open, onClose, onSuccess }) {
 
     try {
       const token = await getToken()
-      setAuthToken(token)
-      await api.post('/habits', formData)
-      toast.success('Habit created successfully!')
-      setFormData({ title: '', category: '', goal_type: 'daily', goal_value: '1' })
-      onSuccess()
+      const API_URL = window.ENV?.VITE_API_URL || 'https://healthy-habits-be-1.onrender.com/api'
+      
+      console.log('📤 Creating habit:', formData)  // DEBUG
+      
+      const response = await fetch(`${API_URL}/habits`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)  // ✅ name, category match backend
+      })
+      
+      console.log('📡 Response:', response.status)  // DEBUG
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
+      const result = await response.json()
+      console.log('✅ Habit created:', result)
+      
+      toast.success('✅ Habit created successfully!')
+      setFormData({ name: '', category: '', goal_type: 'daily', goal_value: '1' })
+      onSuccess?.()  // Refresh habits list
       onClose()
+      
     } catch (error) {
-      console.error('Error creating habit:', error)
-      toast.error('Failed to create habit')
+      console.error('💥 Create error:', error)
+      toast.error(`Failed to create habit: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -55,13 +76,13 @@ export default function CreateHabitDialog({ open, onClose, onSuccess }) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div>
-            <Label htmlFor="title">Habit Name</Label>
+            <Label htmlFor="name">Habit Name</Label>
             <Input
-              id="title"
-              data-testid="habit-title-input"
+              id="name"                    // ✅ Changed from 'title'
+              data-testid="habit-name-input"
               placeholder="e.g., Morning meditation"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
               className="rounded-xl"
             />
@@ -109,7 +130,7 @@ export default function CreateHabitDialog({ open, onClose, onSuccess }) {
               data-testid="create-habit-submit-btn"
               type="submit"
               disabled={loading}
-              className="rounded-full"
+              className="rounded-full bg-emerald-500 hover:bg-emerald-600"
             >
               {loading ? 'Creating...' : 'Create Habit'}
             </Button>
