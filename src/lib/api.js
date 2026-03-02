@@ -1,5 +1,3 @@
-// src/lib/api.js - 100% COMPLETE & WORKING CODE
-// Copy-paste karke replace kar dijiye - SAB ERRORS FIX!
 
 export const API_URL = 'https://healthy-habits-be-1.onrender.com/api'
 
