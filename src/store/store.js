@@ -1,3 +1,4 @@
+import { configureStore } from '@reduxjs/toolkit'  
 import { habitsSlice } from './habitsSlice'
 import { useAppDispatch, useAppSelector } from '../hooks'
 
