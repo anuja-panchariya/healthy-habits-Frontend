@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@clerk/clerk-react'
-import { createHabit, getHabits } from '../../lib/api'  // YE IMPORTS
+import { api, updateHabit } from 'lib/api';
+
 
 export default function HabitsPage() {
   const { getToken } = useAuth()
