@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@clerk/clerk-react'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { fetchHabits, logHabit, setLoading } from '../store/habitsSlice'
+import { fetchHabits, setHabits, setLoading } from '../store/habitsSlice'
 import { toast } from 'sonner'
 import WellnessScoreCard from './WellnessScoreCard'
 import QuickStatsCard from './QuickStatsCard'
@@ -14,10 +14,9 @@ export default function DashboardGrid() {
   const { getToken, userId } = useAuth()
   const dispatch = useAppDispatch()
   
-  //  FULL REDUX SELECTOR
-  const { habits, wellnessScore, streaks, loading, loadingReminder, error } = useAppSelector(state => state.habits)
+  const { habits, wellnessScore, streaks, loading, error } = useAppSelector(state => state.habits)
 
-  // REDUX ACTION - Fetch habits from API
+  // ✅ FIXED: Complete API integration
   const loadData = async () => {
     if (!userId) return
     
@@ -25,107 +24,109 @@ export default function DashboardGrid() {
       dispatch(setLoading(true))
       const token = await getToken()
       
-      // Real API call (replace with your endpoint)
-      const response = await fetch('/api/habits', {
-        headers: { Authorization: `Bearer ${token}` }
+      // ✅ VITE_API_URL + Real endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/habits`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
+      
+      if (!response.ok) throw new Error('Failed to fetch habits')
       const data = await response.json()
       
-      dispatch(fetchHabits()) // Optimistic update
-      // dispatch(setHabits(data.habits)) // Real data
+      // ✅ REAL DATA TO REDUX
+      dispatch(setHabits(data.habits || []))
+      dispatch(setLoading(false))
+      
+      toast.success('✅ Habits loaded!')
     } catch (error) {
       console.error('Failed to load habits:', error)
       dispatch(setLoading(false))
+      toast.error('Failed to load habits')
     }
   }
 
   useEffect(() => {
-    if (userId) {
-      loadData()
-    }
+    loadData()
   }, [userId, dispatch])
 
-  // REDUX ACTION - Log habit
   const handleLogHabit = async (habitId) => {
     try {
       dispatch(logHabit(habitId))
-      toast.success('✅ Habit logged successfully!')
+      toast.success('✅ Habit logged!')
     } catch (error) {
       toast.error('Failed to log habit')
     }
   }
 
-  const handleCreateHabit = () => {
-    loadData() // Refresh after creating new habit
-  }
-
-  const sendDailyReminder = () => {
-    toast.success(`✅ Reminders scheduled for ${habits.length} habits!`)
-  }
-
-  //  REDUX LOADING STATE
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center space-y-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="flex flex-col items-center space-y-4 p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
-          <p className="text-muted-foreground">Loading your habits...</p>
+          <p className="text-lg text-muted-foreground">Loading your habits...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {/* Wellness Score - 2x width */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+      {/* Wellness Score */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.5 }}
         className="lg:col-span-2"
       >
-        <WellnessScoreCard score={wellnessScore} />
+        <WellnessScoreCard score={wellnessScore || 0} />
       </motion.div>
 
       {/* Quick Stats */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.4, delay: 0.1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <QuickStatsCard habits={habits} streaks={streaks} />
+        <QuickStatsCard 
+          habits={habits} 
+          streaks={streaks || []} 
+        />
       </motion.div>
 
       {/* Daily Reminders */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.4, delay: 0.15 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
       >
         <DailyRemindersCard 
-          onSendReminder={sendDailyReminder} 
-          loadingReminder={loadingReminder} 
           habitsLength={habits.length} 
+          onSendReminder={() => toast.success(`✅ Reminders set for ${habits.length} habits!`)}
         />
       </motion.div>
 
-      {/* Today's Habits - 2x width */}
+      {/* Today's Habits */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.4, delay: 0.2 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
         className="lg:col-span-2"
       >
-        <TodaysHabitsCard habits={habits} onLogHabit={handleLogHabit} />
+        <TodaysHabitsCard 
+          habits={habits} 
+          onLogHabit={handleLogHabit} 
+        />
       </motion.div>
 
       {/* Top Streaks */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.4, delay: 0.3 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <TopStreaksCard streaks={streaks} />
+        <TopStreaksCard streaks={streaks || []} />
       </motion.div>
     </div>
   )
