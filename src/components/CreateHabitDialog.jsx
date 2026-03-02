@@ -33,7 +33,7 @@ export default function CreateHabitDialog({ open, onClose, onSuccess }) {
     try {
       const token = await getToken()
       setAuthToken(token)
-      await api.post('/api/habits', formData)
+      await api.post('/habits', formData)
       toast.success('Habit created successfully!')
       setFormData({ title: '', category: '', goal_type: 'daily', goal_value: '1' })
       onSuccess()
