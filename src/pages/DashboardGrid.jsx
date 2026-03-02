@@ -1,8 +1,8 @@
-import React, { useEffect, useCallback } from 'react'
+import React, { useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@clerk/clerk-react'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { setHabits, setLoading, setWellnessScore } from '../store/habitsSlice'
+import { setHabits, setLoading } from '../store/habitsSlice'
 import { toast } from 'sonner'
 import WellnessScoreCard from './WellnessScoreCard'
 import QuickStatsCard from './QuickStatsCard'
@@ -13,14 +13,22 @@ import TopStreaksCard from './TopStreaksCard'
 export default function DashboardGrid() {
   const { getToken, userId } = useAuth()
   const dispatch = useAppDispatch()
-  const { habits, wellnessScore, streaks, loading } = useAppSelector(state => state.habits)
+  const { habits, loading } = useAppSelector(state => state.habits)
+
+  // ✅ LOCAL WELLNESS SCORE CALCULATION (No Redux!)
+  const wellnessScore = useMemo(() => {
+    if (!habits?.length) return 0
+    
+    let score = 50 // Base
+    score += Math.min(habits.length * 8, 25) // Habits count
+    score += Math.min(habits.filter(h => h.streak && h.streak > 0).length * 12, 25) // Streaks
+    return Math.min(Math.round(score), 100)
+  }, [habits])
 
   const loadData = useCallback(async () => {
     if (!userId) return
-    
-    // Prevent double calls
-    if (habits.length > 0 && wellnessScore !== null) {
-      console.log('✅ Data already loaded')
+    if (habits.length > 0) {
+      console.log('✅ Habits cached, skipping')
       return
     }
     
@@ -29,47 +37,30 @@ export default function DashboardGrid() {
       const token = await getToken()
       const API_URL = window.ENV?.VITE_API_URL || 'https://healthy-habits-be-1.onrender.com/api'
       
-      // ✅ 1. Habits API
-      console.log('🔍 Loading habits...')
-      const habitsResponse = await fetch(`${API_URL}/habits`, {
+      console.log('🔍 Loading habits:', `${API_URL}/habits`)
+      const response = await fetch(`${API_URL}/habits`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
       
-      if (!habitsResponse.ok) throw new Error(`Habits: ${habitsResponse.status}`)
-      const habitsData = await habitsResponse.json()
-      console.log('✅ Habits:', habitsData)
-      dispatch(setHabits(habitsData.habits || habitsData || []))
-
-      // ✅ 2. Wellness Score API  
-      console.log('🔍 Loading wellness score...')
-      const wellnessResponse = await fetch(`${API_URL}/habits/wellness-score`, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      console.log('📡 Status:', response.status)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
       
-      if (!wellnessResponse.ok) {
-        console.warn('⚠️ Wellness score unavailable, using 0')
-        dispatch(setWellnessScore(0))
-      } else {
-        const wellnessData = await wellnessResponse.json()
-        console.log('🏥 Wellness score:', wellnessData)
-        dispatch(setWellnessScore(wellnessData.score || 0))
-      }
+      const data = await response.json()
+      console.log('✅ Habits loaded:', data)
       
+      dispatch(setHabits(data.habits || data || []))
       dispatch(setLoading(false))
-      toast.success(`✅ ${habitsData.habits?.length || habitsData.length || 0} habits loaded!`)
+      toast.success(`✅ ${data.habits?.length || data.length || 0} habits loaded!`)
       
     } catch (error) {
-      console.error('💥 Load error:', error)
+      console.error('💥 Error:', error)
       dispatch(setLoading(false))
-      toast.error(`Load failed: ${error.message}`)
+      toast.error(`Failed to load: ${error.message}`)
     }
-  }, [userId, habits.length, wellnessScore, dispatch, getToken])
+  }, [userId, habits.length, dispatch, getToken])
 
   useEffect(() => {
     loadData()
@@ -86,26 +77,54 @@ export default function DashboardGrid() {
     )
   }
 
+  console.log('🏥 Wellness score:', wellnessScore)
+  console.log('🎨 Habits for UI:', habits)
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="lg:col-span-2">
-        <WellnessScoreCard score={wellnessScore || 0} />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 p-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.5 }} 
+        className="lg:col-span-2"
+      >
+        <WellnessScoreCard score={wellnessScore} />
       </motion.div>
       
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-        <QuickStatsCard habits={habits} streaks={streaks || []} />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <QuickStatsCard habits={habits} streaks={[]} />
       </motion.div>
       
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
-        <DailyRemindersCard habitsLength={habits.length} onSendReminder={() => toast.success(`✅ Reminders for ${habits.length} habits!`)} />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <DailyRemindersCard 
+          habitsLength={habits.length} 
+          onSendReminder={() => toast.success(`✅ Reminders for ${habits.length} habits!`)} 
+        />
       </motion.div>
       
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="lg:col-span-2">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.5, delay: 0.3 }} 
+        className="lg:col-span-2"
+      >
         <TodaysHabitsCard habits={habits} onLogHabit={habitId => toast.success('✅ Habit logged!')} />
       </motion.div>
       
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
-        <TopStreaksCard streaks={streaks || []} />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <TopStreaksCard streaks={[]} />
       </motion.div>
     </div>
   )
