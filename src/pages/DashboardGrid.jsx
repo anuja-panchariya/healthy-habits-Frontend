@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@clerk/clerk-react'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { setHabits, setLoading } from '../store/habitsSlice'
+import { setHabits, setLoading, setWellnessScore } from '../store/habitsSlice'
 import { toast } from 'sonner'
 import WellnessScoreCard from './WellnessScoreCard'
 import QuickStatsCard from './QuickStatsCard'
@@ -15,70 +15,72 @@ export default function DashboardGrid() {
   const dispatch = useAppDispatch()
   const { habits, wellnessScore, streaks, loading } = useAppSelector(state => state.habits)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!userId) return
     
-    // ✅ FIX 1: Prevent double calls
-    if (habits.length > 0) {
-      console.log('✅ Habits already loaded, skipping')
+    // Prevent double calls
+    if (habits.length > 0 && wellnessScore !== null) {
+      console.log('✅ Data already loaded')
       return
     }
     
     try {
       dispatch(setLoading(true))
       const token = await getToken()
-      
       const API_URL = window.ENV?.VITE_API_URL || 'https://healthy-habits-be-1.onrender.com/api'
-      console.log('🔍 API URL:', `${API_URL}/habits`)
       
-      const response = await fetch(`${API_URL}/habits`, {
+      // ✅ 1. Habits API
+      console.log('🔍 Loading habits...')
+      const habitsResponse = await fetch(`${API_URL}/habits`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
       
-      console.log('📡 Response status:', response.status, response.statusText)
+      if (!habitsResponse.ok) throw new Error(`Habits: ${habitsResponse.status}`)
+      const habitsData = await habitsResponse.json()
+      console.log('✅ Habits:', habitsData)
+      dispatch(setHabits(habitsData.habits || habitsData || []))
+
+      // ✅ 2. Wellness Score API  
+      console.log('🔍 Loading wellness score...')
+      const wellnessResponse = await fetch(`${API_URL}/habits/wellness-score`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ Backend error:', response.status, errorText)
-        throw new Error(`HTTP ${response.status}: ${errorText.slice(0, 100)}`)
+      if (!wellnessResponse.ok) {
+        console.warn('⚠️ Wellness score unavailable, using 0')
+        dispatch(setWellnessScore(0))
+      } else {
+        const wellnessData = await wellnessResponse.json()
+        console.log('🏥 Wellness score:', wellnessData)
+        dispatch(setWellnessScore(wellnessData.score || 0))
       }
       
-      const contentType = response.headers.get('content-type')
-      if (!contentType?.includes('application/json')) {
-        const text = await response.text()
-        console.error('❌ Not JSON:', contentType, text.slice(0, 200))
-        throw new Error('Server returned HTML, not JSON')
-      }
-      
-      const data = await response.json()
-      console.log('✅ Habits data:', data)
-      console.log('🎯 First habit:', data[0])  // DEBUG
-      
-      dispatch(setHabits(data.habits || data || []))
       dispatch(setLoading(false))
-      toast.success(`✅ ${data.habits?.length || data.length || 0} habits loaded!`)
+      toast.success(`✅ ${habitsData.habits?.length || habitsData.length || 0} habits loaded!`)
       
     } catch (error) {
-      console.error('💥 Full error:', error)
+      console.error('💥 Load error:', error)
       dispatch(setLoading(false))
-      toast.error(`Failed to load habits: ${error.message}`)
+      toast.error(`Load failed: ${error.message}`)
     }
-  }
+  }, [userId, habits.length, wellnessScore, dispatch, getToken])
 
-  // ✅ FIX 2: Stable dependencies
   useEffect(() => {
     loadData()
-  }, [userId, habits.length])  // Add habits.length to prevent loops
+  }, [loadData])
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="flex flex-col items-center space-y-4 p-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
-          <p className="text-lg text-muted-foreground">Loading habits...</p>
+          <p className="text-lg text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
     )
