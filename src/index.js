@@ -12,12 +12,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ClerkProvider 
       publishableKey={CLERK_PUBLISHABLE_KEY}
-      afterSignInUrl="/dashboard"    
-      afterSignUpUrl="/dashboard"   
+      afterSignInUrl="/dashboard"
+      afterSignUpUrl="/dashboard"
     >
       <Provider store={store}>                    
         <App />
-      </Provider>                                  
+      </Provider>
     </ClerkProvider>
   </React.StrictMode>,
 )
