@@ -1,4 +1,4 @@
-\
+
 import React, { useEffect, useState, useCallback } from 'react'
 import WellnessScoreCard from '../components/WellnessScoreCard'  
 import { getHabits, createHabit, deleteHabit } from '../lib/api'
