@@ -1,7 +1,6 @@
-// ✅ HabitsPage.jsx - COMPLETE WORKING VERSION
-
+\
 import React, { useEffect, useState, useCallback } from 'react'
-import WellnessScoreCard from '../components/WellnessScoreCard'  // ✅ Import
+import WellnessScoreCard from '../components/WellnessScoreCard'  
 import { getHabits, createHabit, deleteHabit } from '../lib/api'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
