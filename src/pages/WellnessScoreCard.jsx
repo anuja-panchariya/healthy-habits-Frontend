@@ -1,65 +1,86 @@
 import React from 'react'
-import { Progress } from '../components/ui/progress'
+import { TrendingUp, Heart } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { TrendingUp, Star } from 'lucide-react'
 
 export default function WellnessScoreCard({ score = 0 }) {
+  console.log('🏥 WellnessScoreCard score:', score)
+  
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'from-emerald-500 to-emerald-600'
+    if (score >= 60) return 'from-yellow-500 to-yellow-600'
+    return 'from-red-500 to-red-600'
+  }
+
+  const strokeDashoffset = 377 - (score * 377 / 100)
+
   return (
-    <Card className="group relative overflow-hidden bg-card/80 backdrop-blur-xl border-border/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 border border-white/20 dark:border-black/20">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-400/10 to-emerald-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      
-      <CardHeader className="pb-4 relative z-10">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl shadow-lg">
-            <TrendingUp className="w-6 h-6 text-white drop-shadow-sm" />
-          </div>
-          <CardTitle className="text-2xl font-light tracking-wide bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+    <Card className="bg-gradient-to-br from-slate-50 to-blue-50 border-0 shadow-2xl overflow-hidden">
+      <CardHeader className="pb-6">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-2xl font-bold text-gray-900">
             Wellness Score
           </CardTitle>
+          <TrendingUp className="w-7 h-7 text-emerald-500" />
         </div>
+        <p className="text-sm text-muted-foreground">Based on your habits & streaks</p>
       </CardHeader>
       
-      <CardContent className="relative z-10 space-y-6">
-        {/* Score Display */}
-        <div className="text-center">
-          <div className={`text-6xl font-black mb-4 drop-shadow-2xl transition-all duration-1000 ${
-            score > 80 ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 
-            score > 50 ? 'bg-gradient-to-r from-blue-500 to-indigo-500' : 
-            'bg-gradient-to-r from-orange-500 to-red-500'
-          } bg-clip-text text-transparent`}>
-            {score}%
-          </div>
-          <p className="text-lg font-medium text-muted-foreground/90 tracking-wide">
-            Your overall wellness
-          </p>
-        </div>
-        
-        {/* Main Progress Bar */}
-        <div className="space-y-2">
-          <Progress 
-            value={score} 
-            className="h-3 [&>div]:!bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:via-green-500 [&>div]:to-emerald-600 [&>div]:shadow-lg h-4 bg-muted/50 border border-muted-foreground/20 rounded-full overflow-hidden"
-          />
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Poor</span>
-            <span className="font-mono text-sm font-semibold">{score}%</span>
-            <span className="text-emerald-600 font-semibold">Perfect</span>
+      <CardContent className="text-center">
+        {/* Score Badge */}
+        <div className="inline-flex items-center mb-8 p-6 bg-white/70 rounded-3xl backdrop-blur-sm shadow-xl border border-white/50">
+          <Heart className="w-14 h-14 text-red-400 mr-4" />
+          <div>
+            <div className="text-5xl font-black text-gray-900 leading-none">
+              {score}%
+            </div>
+            <p className="text-sm text-gray-600 font-medium mt-1">Your daily wellness</p>
           </div>
         </div>
         
-        {/* Status Badge */}
-        <div className="flex items-center justify-center gap-2 p-3 bg-muted/50 backdrop-blur-sm rounded-2xl border border-muted-foreground/30">
-          <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-            score > 80 ? 'bg-emerald-500/20 text-emerald-700 border-emerald-500/30' :
-            score > 50 ? 'bg-blue-500/20 text-blue-700 border-blue-500/30' :
-            'bg-orange-500/20 text-orange-700 border-orange-500/30'
+        {/* Progress Ring */}
+        <div className="w-40 h-40 mx-auto relative mb-6">
+          <svg className="w-full h-full transform -rotate-90 origin-center">
+            <circle
+              cx="80" cy="80" r="74"
+              fill="none"
+              stroke="#f1f5f9"
+              strokeWidth="10"
+              className="transition-all duration-1000"
+            />
+            <circle
+              cx="80" cy="80" r="74"
+              fill="none"
+              stroke={`url(#scoreGradient)`}
+              strokeWidth="10"
+              strokeDasharray="465"
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              className={`transition-all duration-1500 origin-center ${
+                score >= 80 ? 'animate-in slide-in-from-bottom-2' : ''
+              }`}
+            />
+            <defs>
+              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444"} />
+                <stop offset="50%" stopColor={score >= 80 ? "#059669" : score >= 60 ? "#d97706" : "#dc2626"} />
+                <stop offset="100%" stopColor={score >= 80 ? "#047857" : score >= 60 ? "#b45309" : "#b91c1c"} />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-3xl font-bold text-gray-900">{score}%</span>
+          </div>
+        </div>
+        
+        {/* Score Status */}
+        <div className="space-y-1">
+          <p className={`text-sm font-semibold ${
+            score >= 80 ? 'text-emerald-600' : 
+            score >= 60 ? 'text-amber-600' : 'text-red-600'
           }`}>
-            {score > 80 ? '🏆 Excellent!' : score > 50 ? '💪 Great!' : '🌱 Keep Going!'}
-          </div>
-          {score > 80 && (
-            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 animate-pulse" />
-          )}
+            {score >= 80 ? 'Excellent!' : score >= 60 ? 'Good' : 'Keep going!'}
+          </p>
+          <p className="text-xs text-muted-foreground">Updated today</p>
         </div>
       </CardContent>
     </Card>
