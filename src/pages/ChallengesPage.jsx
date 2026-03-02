@@ -209,7 +209,6 @@ export default function ChallengesPage() {
           </Button>
         </div>
 
-        {/* REST OF JSX SAME - NO CHANGES */}
         {challenges.length === 0 ? (
           <Card className="text-center py-16">
             <CardContent className="space-y-4">
@@ -299,7 +298,7 @@ export default function ChallengesPage() {
           </div>
         )}
 
-        {/* CREATE DIALOG & LEADERBOARD DIALOG - SAME JSX */}
+        {/* CREATE DIALOG */}
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
           <DialogContent>
             <DialogHeader>
@@ -325,6 +324,7 @@ export default function ChallengesPage() {
           </DialogContent>
         </Dialog>
 
+        {/* LEADERBOARD DIALOG */}
         <Dialog open={!!selectedChallenge} onOpenChange={() => setSelectedChallenge(null)}>
           <DialogContent className="max-w-3xl max-h-[80vh] p-1">
             <Card className="w-full h-full border-0 shadow-2xl overflow-hidden">
@@ -359,5 +359,18 @@ export default function ChallengesPage() {
                 )}
               </CardContent>
               <div className="px-6 py-4 bg-muted/50 border-t border-border">
-                <div className="flex
-
+                <Button 
+                  onClick={() => setSelectedChallenge(null)}
+                  variant="outline" 
+                  className="w-full rounded-xl"
+                >
+                  Close Leaderboard
+                </Button>
+              </div>
+            </Card>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  )
+}
