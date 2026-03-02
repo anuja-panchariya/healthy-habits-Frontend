@@ -18,11 +18,16 @@ export default function DashboardGrid() {
   const loadData = async () => {
     if (!userId) return
     
+    // ✅ FIX 1: Prevent double calls
+    if (habits.length > 0) {
+      console.log('✅ Habits already loaded, skipping')
+      return
+    }
+    
     try {
       dispatch(setLoading(true))
       const token = await getToken()
       
-      // ✅ CRACO FIX: window.ENV instead of import.meta.env
       const API_URL = window.ENV?.VITE_API_URL || 'https://healthy-habits-be-1.onrender.com/api'
       console.log('🔍 API URL:', `${API_URL}/habits`)
       
@@ -33,7 +38,6 @@ export default function DashboardGrid() {
         }
       })
       
-      // ✅ CRITICAL: Check response FIRST
       console.log('📡 Response status:', response.status, response.statusText)
       
       if (!response.ok) {
@@ -42,7 +46,6 @@ export default function DashboardGrid() {
         throw new Error(`HTTP ${response.status}: ${errorText.slice(0, 100)}`)
       }
       
-      // ✅ Check Content-Type before JSON parse
       const contentType = response.headers.get('content-type')
       if (!contentType?.includes('application/json')) {
         const text = await response.text()
@@ -52,10 +55,11 @@ export default function DashboardGrid() {
       
       const data = await response.json()
       console.log('✅ Habits data:', data)
+      console.log('🎯 First habit:', data[0])  // DEBUG
       
       dispatch(setHabits(data.habits || data || []))
       dispatch(setLoading(false))
-      toast.success(`✅ ${data.habits?.length || 0} habits loaded!`)
+      toast.success(`✅ ${data.habits?.length || data.length || 0} habits loaded!`)
       
     } catch (error) {
       console.error('💥 Full error:', error)
@@ -64,9 +68,10 @@ export default function DashboardGrid() {
     }
   }
 
+  // ✅ FIX 2: Stable dependencies
   useEffect(() => {
     loadData()
-  }, [userId])
+  }, [userId, habits.length])  // Add habits.length to prevent loops
 
   if (loading) {
     return (
