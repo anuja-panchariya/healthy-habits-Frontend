@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Badge } from '../components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog'
-import { getChallenges, createChallenge, joinChallenge, getLeaderboard } from '../lib/api'  // ✅ FIXED IMPORTS
+import { getChallenges, createChallenge, joinChallenge, getLeaderboard } from '../lib/api'  
 import { toast } from 'sonner'
 
 // LeaderboardRow component (same)
@@ -360,3 +360,4 @@ export default function ChallengesPage() {
               </CardContent>
               <div className="px-6 py-4 bg-muted/50 border-t border-border">
                 <div className="flex
+
