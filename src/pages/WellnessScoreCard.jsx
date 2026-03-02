@@ -3,82 +3,71 @@ import { TrendingUp, Heart } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 
 export default function WellnessScoreCard({ score = 0 }) {
-  console.log('🏥 Rendering WellnessScoreCard:', score)
-
-  const getScoreColor = (score) => {
-    if (score >= 80) return { bg: 'from-emerald-500', text: 'text-emerald-600' }
-    if (score >= 60) return { bg: 'from-yellow-500', text: 'text-amber-600' }
-    return { bg: 'from-red-500', text: 'text-red-600' }
+  console.log('🏥 REAL WellnessScoreCard:', score)
+  
+  const strokeDashoffset = 465 - (score * 465 / 100)
+  const getStatus = (score) => {
+    if (score >= 80) return { text: 'Excellent!', color: 'text-emerald-600' }
+    if (score >= 60) return { text: 'Good!', color: 'text-amber-600' }
+    return { text: 'Keep Going!', color: 'text-red-600' }
   }
 
-  const colors = getScoreColor(score)
-  const strokeDashoffset = 465 - (score * 465 / 100)
+  const status = getStatus(score)
 
   return (
-    <Card className="bg-gradient-to-br from-slate-50 to-blue-50 border-0 shadow-2xl overflow-hidden">
+    <Card className="group bg-gradient-to-br from-white/80 to-slate-50/80 backdrop-blur-xl border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 border-white/50">
       <CardHeader className="pb-6">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold text-gray-900">
+          <CardTitle className="text-2xl font-black bg-gradient-to-r from-gray-900 to-slate-800 bg-clip-text text-transparent">
             Wellness Score
           </CardTitle>
-          <TrendingUp className="w-7 h-7 text-emerald-500 animate-pulse" />
+          <TrendingUp className="w-8 h-8 text-emerald-500 group-hover:scale-110 transition-transform duration-300" />
         </div>
-        <p className="text-sm text-muted-foreground">Based on your habits & consistency</p>
+        <p className="text-sm text-gray-600 font-medium">From your real habit data</p>
       </CardHeader>
       
-      <CardContent className="text-center">
-        {/* Score Display */}
-        <div className="inline-flex items-center mb-8 p-6 bg-white/80 rounded-3xl backdrop-blur-sm shadow-xl border border-white/50">
-          <Heart className="w-14 h-14 text-red-400 mr-4 drop-shadow-lg" />
+      <CardContent className="text-center space-y-6">
+        <div className="inline-flex items-center p-6 bg-white/60 rounded-3xl backdrop-blur-sm shadow-2xl border border-white/50 hover:shadow-3xl transition-all duration-300">
+          <Heart className="w-16 h-16 text-red-400 drop-shadow-lg mr-4" />
           <div>
-            <div className="text-5xl font-black text-gray-900 leading-none">
-              {score}
-              <span className="text-2xl font-normal text-gray-500">%</span>
+            <div className="text-6xl font-black text-gray-900 leading-none">
+              {score}%
             </div>
-            <p className="text-sm text-gray-600 font-medium mt-1">Daily Wellness</p>
+            <p className="text-sm text-gray-600 font-semibold mt-2">Real Score</p>
           </div>
         </div>
         
-        {/* Animated Progress Ring */}
-        <div className="w-40 h-40 mx-auto relative mb-8">
-          <svg className="w-full h-full transform -rotate-90 origin-center">
-            <circle
-              cx="80" cy="80" r="74"
-              fill="none"
-              stroke="#f1f5f9"
-              strokeWidth="12"
-              className="transition-all duration-1000"
-            />
-            <circle
-              cx="80" cy="80" r="74"
-              fill="none"
-              stroke={`url(#scoreGradient)`}
-              strokeWidth="12"
-              strokeDasharray="465"
+        <div className="w-44 h-44 mx-auto relative">
+          <svg className="w-full h-full -rotate-90 origin-center">
+            <circle cx="88" cy="88" r="80" fill="none" stroke="#f8fafc" strokeWidth="10" />
+            <circle 
+              cx="88" cy="88" r="80" 
+              fill="none" 
+              stroke={`url(#gradient-${score})`}
+              strokeWidth="10"
+              strokeDasharray="502"
               strokeDashoffset={strokeDashoffset}
               strokeLinecap="round"
-              className="transition-all duration-2000 ease-out origin-center"
-              pathLength={1}
+              className="transition-all duration-1500 ease-out"
             />
             <defs>
-              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient id={`gradient-${score}`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor={score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444"} />
                 <stop offset="100%" stopColor={score >= 80 ? "#047857" : score >= 60 ? "#b45309" : "#b91c1c"} />
               </linearGradient>
             </defs>
           </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-3xl font-bold text-gray-900">{score}%</span>
-            <span className="text-xs text-muted-foreground mt-1">Score</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-3xl font-black text-gray-900">{score}%</span>
+            <span className="text-xs text-gray-500 font-medium mt-1">Live Data</span>
           </div>
         </div>
         
-        {/* Status */}
-        <div className="space-y-1">
-          <p className={`text-lg font-bold ${colors.text}`}>
-            {score >= 80 ? 'Excellent!' : score >= 60 ? 'Good Progress' : 'Keep Going!'}
+        <div>
+          <p className={`text-xl font-bold ${status.color} animate-pulse`}>
+            {status.text}
           </p>
-          <p className="text-xs text-muted-foreground">Live calculation from habits</p>
+          <p className="text-xs text-gray-500 mt-1">Real backend calculation</p>
         </div>
       </CardContent>
     </Card>
