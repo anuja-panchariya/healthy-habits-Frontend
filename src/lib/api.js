@@ -59,16 +59,20 @@ export const deleteHabit = (id) =>
   apiFetch(`/habits/${id}`, { method: 'DELETE' })
 export const getStats = () => apiFetch('/stats')
 
-// ✅ API OBJECT EXPORT - YE MISSING THA (Latest error fix)
+export const getChallenges = () => apiFetch('/challenges')
+export const createChallenge = (data) => apiFetch('/challenges', { 
+  method: 'POST', 
+  body: JSON.stringify(data) 
+})
+export const joinChallenge = (id) => apiFetch(`/challenges/${id}/join`, { 
+  method: 'POST' 
+})
+export const getLeaderboard = (id) => apiFetch(`/challenges/${id}/leaderboard`)
+
 export const api = {
   fetch: apiFetch,
-  login,
-  register,
-  getHabits,
-  createHabit,
-  updateHabit,
-  deleteHabit,
-  getStats,
-  setAuthToken,
-  clearAuthToken
+  login, register, getHabits, createHabit, updateHabit, deleteHabit, getStats,
+  getChallenges, createChallenge, joinChallenge, getLeaderboard,  // ← ADD THESE
+  setAuthToken, clearAuthToken
 }
+
