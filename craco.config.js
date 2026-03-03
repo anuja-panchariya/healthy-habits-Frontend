@@ -12,7 +12,6 @@ module.exports = {
     },
   },
 
-  // ✅ ADD THIS devServer SECTION
   devServer: {
     historyApiFallback: true,
     static: path.join(__dirname, 'public'),
@@ -22,7 +21,7 @@ module.exports = {
     alias: {
       "@": path.resolve(__dirname, "src"),
     },
-    configure: (webpackConfig, { env, paths }) => {
+    configure: (webpackConfig, { env }) => {
       webpackConfig.watchOptions = {
         ...webpackConfig.watchOptions,
         ignored: [
@@ -35,17 +34,10 @@ module.exports = {
         ],
       };
 
-      // ✅ SPA ROUTING FIX - Critical for React Router + Render
       if (env === 'production') {
         webpackConfig.output.publicPath = '/';
-        webpackConfig.plugins.push(
-          new webpack.DefinePlugin({
-            'process.env.PUBLIC_URL': JSON.stringify('')
-          })
-        );
       }
 
-      // ✅ YOUR EXISTING ENV
       webpackConfig.plugins.push(
         new webpack.DefinePlugin({
           'window.ENV': JSON.stringify({
