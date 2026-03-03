@@ -1,6 +1,11 @@
 const path = require("path");
 const webpack = require('webpack');
 
+// ✅ DISABLE CRA MODULESCOPEPLUGIN
+const CracoAlias = require('craco-alias');
+const ModuleScopePlugin = require('react-dev-utils/ModuleScopePlugin');
+const path = require('path');
+
 module.exports = {
   eslint: {
     configure: {
@@ -18,9 +23,6 @@ module.exports = {
   },
 
   webpack: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
     configure: (webpackConfig, { env }) => {
       webpackConfig.watchOptions = {
         ...webpackConfig.watchOptions,
@@ -28,11 +30,13 @@ module.exports = {
           "**/node_modules/**",
           "**/.git/**",
           "**/build/**",
-          "**/dist/**",
-          "**/coverage/**",
-          "**/public/**",
         ],
       };
+
+      // ✅ DISABLE MODULESCOPEPLUGIN - FIXES IMPORT ERROR
+      webpackConfig.resolve.plugins = webpackConfig.resolve.plugins.filter(
+        plugin => !(plugin instanceof ModuleScopePlugin)
+      );
 
       if (env === 'production') {
         webpackConfig.output.publicPath = '/';
@@ -48,5 +52,9 @@ module.exports = {
 
       return webpackConfig;
     },
+  },
+
+  alias: {
+    '@': path.resolve(__dirname, 'src'),
   },
 };
