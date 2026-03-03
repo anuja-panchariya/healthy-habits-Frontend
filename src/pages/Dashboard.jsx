@@ -27,17 +27,17 @@ export default function Dashboard() {
   const [showLowScoreAlert, setShowLowScoreAlert] = useState(false);
   const [categoryStats, setCategoryStats] = useState({});
 
-  // 🎯 TRUE WELLNESS FORMULA - Category Weighted (0% if no habits!)
+  //  TRUE WELLNESS FORMULA - Category Weighted (0% if no habits!)
   const calculateRealWellnessScore = useCallback((habitsData, analyticsData) => {
     console.log('🔢 Calculating wellness with:', habitsData.length, 'habits');
     
-    // ✅ NO HABITS = 0% (NOT 50%)
+    //  NO HABITS = 0% (NOT 50%)
     if (!habitsData?.length) {
       console.log('❌ No habits = 0% wellness');
       return 0;
     }
 
-    // ✅ CATEGORY WEIGHTS [web:204]
+    // CATEGORY WEIGHTS [web:204]
     const categoryWeights = {
       fitness: 0.35,      // 35% - Exercise
       sleep: 0.25,        // 25% - Sleep  
@@ -50,14 +50,14 @@ export default function Dashboard() {
     let totalCompleted = 0;
     let totalHabits = 0;
 
-    // ✅ Group by category + check completion
+    // Group by category + check completion
     habitsData.forEach(habit => {
       const cat = (habit.category || 'general').toLowerCase();
       categoryStats[cat] = categoryStats[cat] || { total: 0, completed: 0, weight: categoryWeights[cat] || 0.05 };
       categoryStats[cat].total += 1;
       totalHabits += 1;
 
-      // ✅ Check if completed TODAY (multiple sources)
+      // Check if completed TODAY (multiple sources)
       const isCompletedToday = 
         analyticsData.todayLogs?.includes(habit.id) ||
         habit.loggedToday === true ||
@@ -71,7 +71,7 @@ export default function Dashboard() {
       }
     });
 
-    // ✅ Calculate weighted score per category
+    // Calculate weighted score per category
     let weightedScore = 0;
     let totalWeight = 0;
 
@@ -92,7 +92,7 @@ export default function Dashboard() {
       finalScore: `${finalScore}%`
     });
 
-    // ✅ LOW SCORE ALERT TRIGGER
+    //  LOW SCORE ALERT TRIGGER
     if (finalScore < 50 && !showLowScoreAlert) {
       setShowLowScoreAlert(true);
       setTimeout(() => setShowLowScoreAlert(false), 10000);
@@ -109,7 +109,7 @@ export default function Dashboard() {
       const token = await getToken();
       setAuthToken(token);
 
-      // ✅ PRIORITY 1: Backend wellness API
+      //  PRIORITY 1: Backend wellness API
       const [habitsRes, analyticsRes, wellnessRes] = await Promise.allSettled([
         api.get("/api/habits"),
         api.get("/api/analytics"),
