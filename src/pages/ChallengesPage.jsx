@@ -1,380 +1,431 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '@clerk/clerk-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '@clerk/clerk-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Plus, Trophy, Users, Share2, Loader2, Crown, Flame, Zap, Check, Trash2, Globe, MessageCircle 
-} from 'lucide-react'
-import { Button } from '../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { Badge } from '../components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog'
-import { Input } from '../components/ui/input'
-import { api, setAuthToken } from '../lib/api'
-import { toast } from 'sonner'
+  Trophy, Users, Crown, Flame, Zap, CheckCircle, Plus, Sun, Moon, 
+  Share2, Loader2, Target, TrendingUp 
+} from 'lucide-react';
+import { Button } from '../components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Switch } from '../components/ui/switch';
+import { api, setAuthToken } from '../lib/api';
+import { toast } from 'sonner';
 
 export default function ChallengesPage() {
-  const { getToken } = useAuth()
-  const [challenges, setChallenges] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [userJoinedChallenges, setUserJoinedChallenges] = useState([])
-  const [loadingJoin, setLoadingJoin] = useState({})
-  const [loadingDelete, setLoadingDelete] = useState({})
+  const { getToken, userId } = useAuth();
+  const [isDark, setIsDark] = useState(false);
+  const [challenges, setChallenges] = useState([]);
+  const [myChallenges, setMyChallenges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedChallenge, setSelectedChallenge] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
 
-  //  Load challenges + user's joined status
-  const loadChallenges = useCallback(async () => {
+  // 🎯 THEME TOGGLE
+  useEffect(() => {
+    const saved = localStorage.getItem('darkMode') === 'true';
+    setIsDark(saved);
+    document.documentElement.classList.toggle('dark', saved);
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    localStorage.setItem('darkMode', newDark);
+    document.documentElement.classList.toggle('dark', newDark);
+  };
+
+  // 🚀 LOAD CHALLENGES DATA
+  const loadChallengesData = useCallback(async () => {
     try {
-      setLoading(true)
-      const token = await getToken()
-      setAuthToken(token)
-      
-      const [challengesRes, joinedRes] = await Promise.allSettled([
+      setLoading(true);
+      const token = await getToken();
+      setAuthToken(token);
+
+      const [challengesRes, myChallengesRes, leaderboardRes] = await Promise.allSettled([
         api.get('/api/challenges'),
-        api.get('/api/challenges/user-joined')
-      ])
-      
-      const challengesData = challengesRes.status === "fulfilled" 
-        ? (challengesRes.value.challenges || challengesRes.value.data || challengesRes.value || []) 
-        : []
-      
-      const joinedData = joinedRes.status === "fulfilled" 
-        ? (joinedRes.value.joined || joinedRes.value.data || []) 
-        : []
-      
-      setUserJoinedChallenges(joinedData.map(ch => ch.id))
-      const validChallenges = challengesData.filter(ch => !ch.is_deleted)
-      setChallenges(validChallenges)
-      
+        api.get('/api/challenges/my'),
+        api.get('/api/challenges/leaderboard')
+      ]);
+
+      setChallenges(challengesRes.status === "fulfilled" ? (challengesRes.value.data || challengesRes.value || []) : []);
+      setMyChallenges(myChallengesRes.status === "fulfilled" ? (myChallengesRes.value.data || myChallengesRes.value || []) : []);
+      setLeaderboard(leaderboardRes.status === "fulfilled" ? (leaderboardRes.value.data || leaderboardRes.value || []) : []);
+
     } catch (error) {
-      console.error('Challenges load error:', error)
-      
-      // FALLBACK with proper participants count
-      const demoChallenges = [
-        {
-          id: 'hydration-30days',
-          title: '💧 30 Day Hydration Challenge',
-          participants: 12,
-          myStatus: 'joined',
-          is_public: true
-        },
-        {
-          id: 'code-daily',
-          title: '⚡ Code 1hr Daily Challenge', 
-          participants: 8,
-          myStatus: null,
-          is_public: true
-        }
-      ]
-      setChallenges(demoChallenges)
-      setUserJoinedChallenges(['hydration-30days'])
+      console.error('Challenges load error:', error);
+      // Mock data fallback
+      setChallenges([
+        { id: 1, title: '30 Day Water Challenge', participants: 1245, progress: 67, reward: '💧 Hydration Master', color: 'from-blue-500 to-cyan-500' },
+        { id: 2, title: '7 Day Meditation Streak', participants: 892, progress: 45, reward: '🧘‍♀️ Zen Master', color: 'from-purple-500 to-pink-500' },
+        { id: 3, title: '21 Day Fitness Challenge', participants: 2345, progress: 78, reward: '🏋️ Fitness Pro', color: 'from-emerald-500 to-green-600' }
+      ]);
+      setMyChallenges([
+        { id: 1, title: '30 Day Water Challenge', progress: 12, daysLeft: 18, streak: 5, completed: false }
+      ]);
+      setLeaderboard([
+        { name: 'Anuja Panchariya', score: 245, rank: 1 },
+        { name: 'Rahul Sharma', score: 198, rank: 2 },
+        { name: 'Priya Patel', score: 167, rank: 3 }
+      ]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [getToken])
+  }, [getToken]);
 
   useEffect(() => {
-    loadChallenges()
-  }, [loadChallenges])
+    if (userId) {
+      loadChallengesData();
+    }
+  }, [userId, loadChallengesData]);
 
-  // Hide Join button if already joined
-  const isJoined = (challengeId) => {
-    return userJoinedChallenges.includes(challengeId)
-  }
-
-  //  JOIN CHALLENGE 
-  const handleJoin = async (challengeId, challengeTitle) => {
-    if (loadingJoin[challengeId] || isJoined(challengeId)) return
-    
-    setLoadingJoin(prev => ({ ...prev, [challengeId]: true }))
+  // 🎯 JOIN CHALLENGE
+  const joinChallenge = async (challengeId) => {
     try {
-      const token = await getToken()
-      setAuthToken(token)
-      
-      await api.post(`/api/challenges/${challengeId}/join`)
-      
-      toast.success(`🎉 Joined "${challengeTitle}"!`)
-      
-      //  Update local state instantly
-      setChallenges(prev => prev.map(challenge =>
-        challenge.id === challengeId
-          ? { 
-              ...challenge, 
-              participants: (challenge.participants || 0) + 1,
-              myStatus: 'joined'
-            }
-          : challenge
-      ))
-      setUserJoinedChallenges(prev => [...prev, challengeId])
-      
+      const token = await getToken();
+      setAuthToken(token);
+      await api.post(`/api/challenges/${challengeId}/join`);
+      toast.success('✅ Joined challenge!');
+      loadChallengesData();
     } catch (error) {
-      if (error.response?.status === 409) {
-        toast.info('Already joined this challenge!')
-      } else {
-        toast.error('Failed to join')
-      }
-    } finally {
-      setLoadingJoin(prev => ({ ...prev, [challengeId]: false }))
+      toast.error('Failed to join challenge');
     }
-  }
+  };
 
-  // DELETE CHALLENGE 
-  const handleDelete = async (challengeId, challengeTitle) => {
-    if (!confirm(`Delete "${challengeTitle}" permanently?`)) return
-    
-    setLoadingDelete(prev => ({ ...prev, [challengeId]: true }))
+  // 🏆 LOG CHALLENGE PROGRESS
+  const logChallengeProgress = async (challengeId) => {
     try {
-      const token = await getToken()
-      setAuthToken(token)
-      
-      await api.delete(`/api/challenges/${challengeId}`)
-      
-      toast.success(`🗑️ "${challengeTitle}" deleted!`)
-      
-      setChallenges(prev => prev.filter(ch => ch.id !== challengeId))
-      
+      const token = await getToken();
+      setAuthToken(token);
+      await api.post(`/api/challenges/${challengeId}/progress`);
+      toast.success('✅ Progress logged!');
+      loadChallengesData();
     } catch (error) {
-      toast.error('Delete failed')
-    } finally {
-      setLoadingDelete(prev => ({ ...prev, [challengeId]: false }))
+      toast.error('Failed to log progress');
     }
-  }
-
-  const shareChallenge = (challenge) => {
-    const joinUrl = `${window.location.origin}/challenges/${challenge.id}`
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(joinUrl)
-      toast.success('🔗 Challenge link copied!')
-    } else {
-      prompt('Copy this link:', joinUrl)
-    }
-  }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
+      <motion.div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="text-center">
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading challenges...</p>
+          <motion.div 
+            animate={{ rotate: 360 }} 
+            transition={{ duration: 1, repeat: Infinity }}
+            className="w-16 h-16 border-4 border-emerald-200 dark:border-slate-500 border-t-emerald-500 dark:border-t-slate-300 rounded-full mx-auto mb-4" 
+          />
+          <p className="text-gray-600 dark:text-slate-300 text-lg">Loading challenges...</p>
         </div>
-      </div>
-    )
+      </motion.div>
+    );
   }
 
   return (
     <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-br from-background via-background/80 to-muted/20 p-6"
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8 transition-all duration-300"
     >
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* ✨ HEADER -  UI */}
+      <div className="max-w-7xl mx-auto space-y-8 relative">
+        
+        {/* 🌙 THEME TOGGLE */}
         <motion.div 
-          initial={{ opacity: 0, y: -20 }} 
-          animate={{ opacity: 1, y: 0 }}
-          className="flex justify-between items-center"
+          className="absolute top-6 right-6 z-50 flex items-center gap-2 p-3 rounded-2xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-emerald-200 dark:border-slate-600 shadow-xl hover:shadow-2xl"
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
         >
-          <div>
-            <h1 className="font-serif text-5xl font-light tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-              Challenges
-            </h1>
-            <p className="text-xl text-muted-foreground mt-2">
-              Compete with {challenges.length > 0 ? `${challenges.length} active` : 'friends'}
-            </p>
-          </div>
-          <Button
-            onClick={() => setShowCreate(true)}
-            className="h-14 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-xl"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Create Challenge
-          </Button>
+          <Sun className={`w-5 h-5 ${isDark ? 'text-slate-500' : 'text-emerald-500'}`} />
+          <Switch checked={isDark} onCheckedChange={toggleDarkMode} />
+          <Moon className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-slate-500'}`} />
         </motion.div>
 
-        {/* 🎯 CHALLENGES GRID - YOUR UI */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-          {challenges.length === 0 ? (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="col-span-full text-center py-32 bg-gradient-to-r from-muted/50 to-muted/30 backdrop-blur-sm rounded-3xl p-12 border border-border/50"
+        {/* ✨ HEADER */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6"
+        >
+          <div>
+            <h1 className="font-serif font-light text-5xl lg:text-6xl tracking-tight bg-gradient-to-r from-gray-900 dark:from-slate-100 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent mb-2">
+              Challenges
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-slate-300">
+              Compete with friends • Win rewards • Build streaks
+            </p>
+          </div>
+          
+          <div className="flex gap-3">
+            <Button className="h-14 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 dark:from-emerald-600 dark:to-emerald-500 shadow-xl text-lg font-semibold text-white">
+              <Crown className="w-5 h-5 mr-2" />
+              Leaderboard
+            </Button>
+            <Button 
+              onClick={() => setShowCreateDialog(true)}
+              className="h-14 px-8 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 shadow-xl text-lg font-semibold text-white"
             >
-              <div className="text-8xl mb-8 opacity-20 mx-auto">🏆</div>
-              <h2 className="text-4xl font-bold text-muted-foreground mb-4">No Challenges</h2>
-              <p className="text-xl text-muted-foreground mb-8 max-w-md mx-auto">
-                Create your first challenge and invite friends to compete!
-              </p>
-              <Button size="lg" className="h-14 px-12 rounded-2xl shadow-xl bg-gradient-to-r from-primary to-primary/80">
-                Create First Challenge
-              </Button>
-            </motion.div>
-          ) : (
-            challenges.map((challenge) => (
-              <motion.div
-                key={challenge.id}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -8 }}
-                className="group"
-              >
-                {/*  YOUR BOX DESIGN */}
-                <Card className="h-[480px] bg-gradient-to-br from-white to-primary/5 backdrop-blur-sm shadow-2xl border-0 hover:shadow-3xl transition-all duration-500 overflow-hidden">
-                  
-                  <CardHeader className="p-8 pb-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-2xl font-bold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                          {challenge.title}
-                        </CardTitle>
-                        
-                        {/*  PARTICIPANTS BADGE */}
-                        <div className="flex items-center gap-3 mt-4">
-                          <Badge className="text-lg px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 shadow-lg">
-                            <Users className="w-4 h-4 mr-2" />
-                            {challenge.participants || 0} participants
-                          </Badge>
-                          
-                          {challenge.is_public && (
-                            <Badge variant="outline" className="text-sm border-primary/50 bg-primary/5">
-                              <Globe className="w-3 h-3 mr-1" />
-                              Public
+              <Plus className="w-5 h-5 mr-2" />
+              New Challenge
+            </Button>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* 🏆 ACTIVE CHALLENGES */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-2xl dark:shadow-3xl border-0 h-[32rem] overflow-hidden">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-2xl text-gray-900 dark:text-white">
+                  <Trophy className="w-8 h-8 text-yellow-500" />
+                  Active Challenges
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="max-h-[26rem] overflow-y-auto space-y-4 p-6">
+                  {challenges.map((challenge) => (
+                    <motion.div
+                      key={challenge.id}
+                      whileHover={{ scale: 1.02 }}
+                      className="group bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-slate-700/50 dark:to-slate-600/20 p-6 rounded-3xl border-2 border-emerald-200 dark:border-slate-500 hover:border-emerald-300 dark:hover:border-slate-400 transition-all backdrop-blur-sm"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 truncate">{challenge.title}</h3>
+                          <div className="flex items-center gap-4 mb-3">
+                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white shadow-lg">
+                              {challenge.reward}
                             </Badge>
-                          )}
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
+                              <Users className="w-4 h-4" />
+                              {challenge.participants.toLocaleString()} joined
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
+                            <div 
+                              className="h-3 bg-gradient-to-r from-emerald-500 to-green-600 dark:from-emerald-400 dark:to-emerald-300 rounded-full shadow-lg"
+                              style={{ width: `${challenge.progress}%` }}
+                            />
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-slate-400 mt-2">{challenge.progress}% complete</p>
+                        </div>
+                        <div className="flex flex-col gap-2 ml-4 flex-shrink-0">
+                          <Button
+                            onClick={() => joinChallenge(challenge.id)}
+                            size="sm"
+                            className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 dark:from-emerald-600 dark:to-emerald-500 text-white shadow-lg px-6 py-2 rounded-xl"
+                          >
+                            Join Now
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-emerald-300 dark:border-slate-500 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-600 dark:text-emerald-400 px-6 py-2 rounded-xl"
+                          >
+                            View
+                          </Button>
                         </div>
                       </div>
-                      
-                      <div className="w-20 h-20 bg-gradient-to-br from-emerald-400/20 to-green-400/20 rounded-3xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-all duration-300">
-                        <Trophy className="w-10 h-10 text-emerald-600 drop-shadow-lg" />
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="p-8 pt-0 space-y-5">
-                    {/*  MAIN BUTTONS - FIXED LOGIC */}
-                    <div className="space-y-3">
-                      {/* JOIN BUTTON - HIDE IF JOINED */}
-                      {!isJoined(challenge.id) ? (
-                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                          <Button
-                            onClick={() => handleJoin(challenge.id, challenge.title)}
-                            disabled={loadingJoin[challenge.id]}
-                            size="lg"
-                            className="w-full h-16 rounded-2xl font-semibold text-lg shadow-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700"
-                          >
-                            {loadingJoin[challenge.id] ? (
-                              <>
-                                <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                                Joining...
-                              </>
-                            ) : (
-                              <>
-                                <Users className="w-6 h-6 mr-3" />
-                                Join Challenge
-                              </>
-                            )}
-                          </Button>
-                        </motion.div>
-                      ) : (
-                        <motion.div 
-                          initial={{ scale: 0.95, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          className="w-full h-16 bg-gradient-to-r from-emerald-500/20 to-green-500/20 rounded-2xl border-2 border-emerald-300/50 flex items-center justify-center backdrop-blur-sm"
-                        >
-                          <Check className="w-8 h-8 text-emerald-500 mr-3" />
-                          <span className="text-xl font-semibold text-emerald-600">✅ Participated!</span>
-                        </motion.div>
-                      )}
-
-                      <motion.div whileHover={{ scale: 1.02 }}>
-                        <Button
-                          variant="outline"
-                          size="lg"
-                          className="w-full h-14 rounded-2xl border-2 text-lg font-semibold border-primary/50 hover:border-primary hover:bg-primary/5 shadow-xl"
-                        >
-                          <Trophy className="w-5 h-5 mr-3" />
-                          View Leaderboard
-                        </Button>
-                      </motion.div>
-                    </div>
-
-                    {/* SHARE BUTTON */}
-                    <motion.div whileHover={{ scale: 1.02 }}>
-                      <Button
-                        onClick={() => shareChallenge(challenge)}
-                        variant="ghost"
-                        className="w-full h-14 rounded-2xl justify-start gap-3 border-2 border-border hover:border-primary/50 hover:bg-primary/5 group transition-all"
-                      >
-                        <Share2 className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
-                        <span className="font-medium">Share Join Link</span>
-                      </Button>
                     </motion.div>
-
-                    {/* DELETE BUTTON */}
-                    <motion.div whileHover={{ scale: 1.02 }}>
-                      <Button
-                        onClick={() => handleDelete(challenge.id, challenge.title)}
-                        variant="destructive"
-                        size="sm"
-                        className="w-full h-12 rounded-xl font-semibold shadow-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                        disabled={loadingDelete[challenge.id]}
-                      >
-                        {loadingDelete[challenge.id] ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete Challenge
-                          </>
-                        )}
-                      </Button>
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* CREATE DIALOG */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-2xl p-0 max-h-[90vh] overflow-hidden">
-          <div className="bg-gradient-to-br from-background to-primary/5 p-8 rounded-3xl shadow-2xl backdrop-blur-sm">
-            <DialogHeader>
-              <DialogTitle className="text-3xl font-bold flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Globe className="w-7 h-7 text-background" />
+                  ))}
+                  {challenges.length === 0 && (
+                    <div className="text-center py-12">
+                      <Trophy className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4 opacity-40" />
+                      <h3 className="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">No challenges yet</h3>
+                      <p className="text-gray-500 dark:text-slate-400 mb-6">Be the first to create one!</p>
+                    </div>
+                  )}
                 </div>
-                Create New Challenge
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 mt-6">
-              <Input
-                placeholder="e.g. 💧 30 Day Hydration Challenge"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                className="h-16 text-xl rounded-2xl border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
-              />
-              <div className="flex gap-4 pt-4">
-                <Button 
-                  onClick={() => {/* create logic */}}
-                  className="flex-1 h-16 rounded-2xl shadow-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-xl hover:from-emerald-600"
-                >
-                  Create & Share
-                </Button>
-                <Button 
-                  onClick={() => setShowCreate(false)}
-                  variant="outline"
-                  className="h-16 px-8 rounded-2xl border-2 border-border hover:border-primary"
-                >
-                  Cancel
-                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* 📊 MY CHALLENGES */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+            <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-2xl dark:shadow-3xl border-0 h-[32rem] overflow-hidden">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-2xl text-gray-900 dark:text-white">
+                  <Flame className="w-8 h-8 text-orange-500" />
+                  My Challenges
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="max-h-[26rem] overflow-y-auto space-y-4 p-6">
+                  {myChallenges.map((challenge) => (
+                    <motion.div
+                      key={challenge.id}
+                      whileHover={{ scale: 1.02 }}
+                      className="group bg-gradient-to-r from-orange-50/50 to-orange-100/30 dark:from-slate-700/50 dark:to-slate-600/20 p-6 rounded-3xl border-2 border-orange-200 dark:border-slate-500 hover:border-orange-300 transition-all backdrop-blur-sm"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{challenge.title}</h4>
+                          <div className="flex items-center gap-4 mb-3 text-sm">
+                            <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                              <TrendingUp className="w-4 h-4" />
+                              Streak: {challenge.streak} days
+                            </div>
+                            <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                              <Target className="w-4 h-4" />
+                              {challenge.daysLeft} days left
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 mb-3">
+                            <div 
+                              className="h-3 bg-gradient-to-r from-emerald-500 to-green-600 dark:from-emerald-400 dark:to-emerald-300 rounded-full shadow-lg"
+                              style={{ width: `${(challenge.progress || 0)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 ml-4 flex-shrink-0">
+                          <Button
+                            onClick={() => logChallengeProgress(challenge.id)}
+                            size="sm"
+                            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 shadow-lg px-6 py-2 rounded-xl text-white"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Log Today
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white">
+                            Share
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                  {myChallenges.length === 0 && (
+                    <div className="text-center py-12">
+                      <Flame className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4 opacity-40" />
+                      <h3 className="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">No challenges joined</h3>
+                      <p className="text-gray-500 dark:text-slate-400 mb-6">Join challenges to start competing!</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* 🏅 LEADERBOARD */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        >
+          <Card className="lg:col-span-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-2xl dark:shadow-3xl border-0">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-2xl text-gray-900 dark:text-white">
+                <Crown className="w-8 h-8 text-yellow-500" />
+                Global Leaderboard
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                {leaderboard.slice(0, 10).map((user, idx) => (
+                  <motion.div
+                    key={user.name}
+                    className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-gray-50 to-emerald-50/30 dark:from-slate-700/50 dark:to-slate-600/20 border border-emerald-200 dark:border-slate-500 hover:shadow-md transition-all"
+                  >
+                    <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                      #{user.rank}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">{user.score} points</p>
+                    </div>
+                    <Badge className="bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg">
+                      Top {user.rank}
+                    </Badge>
+                  </motion.div>
+                ))}
               </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+
+          {/* 📱 QUICK ACTIONS */}
+          <Card className="bg-gradient-to-br from-emerald-50/50 to-green-50/30 dark:from-slate-700/50 dark:to-slate-600/20 shadow-2xl dark:shadow-3xl border-0 backdrop-blur-sm h-fit">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
+                <Zap className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                Quick Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 p-6">
+              <Button className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 dark:from-emerald-600 dark:to-emerald-500 shadow-xl text-white">
+                <Share2 className="w-5 h-5 mr-2" />
+                Invite Friends
+              </Button>
+              <Button className="w-full h-12 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 shadow-xl text-white">
+                <Trophy className="w-5 h-5 mr-2" />
+                View Rewards
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* ✅ CREATE CHALLENGE MODAL */}
+        <AnimatePresence>
+          {showCreateDialog && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-emerald-200 dark:border-slate-600"
+              >
+                <div className="p-8">
+                  <h2 className="text-3xl font-serif font-light bg-gradient-to-r from-gray-900 dark:from-slate-100 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent mb-8 text-center">
+                    Create New Challenge
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <input 
+                      placeholder="Challenge Name (e.g. 30 Day Pushups)" 
+                      className="w-full p-4 border-2 border-emerald-200 dark:border-slate-500 rounded-2xl text-lg bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                    />
+                    <input 
+                      placeholder="Duration (days)" 
+                      type="number"
+                      className="w-full p-4 border-2 border-emerald-200 dark:border-slate-500 rounded-2xl text-lg bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <select className="w-full p-4 border-2 border-emerald-200 dark:border-slate-500 rounded-2xl text-lg bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white">
+                      <option>fitness</option>
+                      <option>hydration</option>
+                      <option>mindfulness</option>
+                    </select>
+                    <input 
+                      placeholder="Reward Badge (e.g. 💪 Fitness Beast)"
+                      className="w-full p-4 border-2 border-emerald-200 dark:border-slate-500 rounded-2xl text-lg bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex gap-4 mt-8 pt-6 border-t border-emerald-200 dark:border-slate-600">
+                    <Button className="flex-1 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 shadow-xl font-semibold text-lg text-white">
+                      Create Challenge
+                    </Button>
+                    <Button 
+                      onClick={() => setShowCreateDialog(false)}
+                      className="h-14 px-12 rounded-2xl border-2 border-emerald-300 dark:border-slate-500 hover:bg-emerald-50 dark:hover:bg-slate-700 font-semibold text-lg text-gray-700 dark:text-slate-200"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
-  )
+  );
 }
