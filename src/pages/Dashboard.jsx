@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [loadingReminder, setLoadingReminder] = useState(false);
 
-  // 🔥 REAL BACKEND DATA + Promise.allSettled
+  // 🚀 FIXED: Wellness = 0 when NO habits (Priority order)
   const loadData = useCallback(async () => {
     try {
       const token = await getToken();
@@ -38,17 +38,40 @@ export default function Dashboard() {
         api.get("/api/habits/wellness-score")
       ]);
 
-      setHabits(habitsRes.status === "fulfilled" ? (habitsRes.value.habits || []) : []);
-      setAnalytics(analyticsRes.status === "fulfilled" ? analyticsRes.value : {});
+      // ✅ STEP 1: Real habits from backend
+      const habitsData = habitsRes.status === "fulfilled" 
+        ? (habitsRes.value.habits || habitsRes.value.data || []) 
+        : [];
+      setHabits(habitsData);
+
+      // ✅ STEP 2: Real analytics
+      const analyticsData = analyticsRes.status === "fulfilled" ? analyticsRes.value : {};
+      setAnalytics(analyticsData);
+
+      // 🚀 STEP 3: FIXED WELLNESS LOGIC (Your requirement!)
+      let wellness = 0; // DEFAULT = 0%
       
-      setWellnessScore(
-        wellnessRes.status === "fulfilled" 
-          ? wellnessRes.value?.score || 0 
-          : 0
-      );
+      // ✅ PRIORITY 1: NO HABITS = 0% (Main requirement!)
+      if (habitsData.length === 0) {
+        wellness = 0;
+      } 
+      // ✅ PRIORITY 2: Backend wellness API
+      else if (wellnessRes.status === "fulfilled" && wellnessRes.value?.score) {
+        wellness = Math.max(0, Math.min(100, wellnessRes.value.score));
+      } 
+      // ✅ PRIORITY 3: Calculate from today's logs vs total habits
+      else if (analyticsData.todayLogs !== undefined && habitsData.length > 0) {
+        const completionRate = (analyticsData.todayLogs / habitsData.length) * 100;
+        wellness = Math.max(0, Math.min(100, completionRate));
+      }
+      // ✅ PRIORITY 4: Default 0%
+
+      setWellnessScore(wellness);
 
     } catch (error) {
       console.error("Dashboard error:", error);
+      setWellnessScore(0); // Errors = 0%
+      setHabits([]);
     } finally {
       setLoading(false);
     }
@@ -63,10 +86,8 @@ export default function Dashboard() {
       const token = await getToken();
       setAuthToken(token);
       await api.post(`/api/habits/${habitId}/log`);
-      
-      // ✨ MAGIC TOAST ANIMATION
       toast.success(`✅ ${habitTitle} logged!`);
-      loadData();
+      loadData(); // Refresh → Wellness updates instantly!
     } catch (error) {
       if (error.response?.status === 409) {
         toast.info("Already logged today! ✨");
@@ -76,7 +97,6 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ YOUR REMINDER ROUTE - /api/reminders/send
   const sendDailyReminder = async () => {
     if (habits.length === 0) {
       toast.info("Create habits first! 🎯");
@@ -89,7 +109,7 @@ export default function Dashboard() {
       setAuthToken(token);
       
       await api.post('/api/reminders/send', {
-        email: "user@example.com", // Clerk user email
+        email: "user@example.com", // TODO: Get from Clerk
         habits: habits.slice(0, 5).map(habit => ({
           title: habit.title,
           category: habit.category || 'General'
@@ -310,7 +330,7 @@ export default function Dashboard() {
             whileHover={{ y: -4, scale: 1.02 }}
             className="h-48"
           >
-            <Card className="h-full bg-gradient-to-b from-muted/50 to-transparent backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-xl">
+            <Card className="h-full bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border-blue-200/50 hover:border-blue-300 shadow-lg hover:shadow-xl backdrop-blur-sm overflow-hidden">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-blue-600 animate-pulse" />
