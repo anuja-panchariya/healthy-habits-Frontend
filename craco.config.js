@@ -1,5 +1,5 @@
 const path = require("path");
-const webpack = require('webpack');  // ← ADD
+const webpack = require('webpack');
 
 module.exports = {
   eslint: {
@@ -12,11 +12,17 @@ module.exports = {
     },
   },
 
+  // ✅ ADD THIS devServer SECTION
+  devServer: {
+    historyApiFallback: true,
+    static: path.join(__dirname, 'public'),
+  },
+
   webpack: {
     alias: {
       "@": path.resolve(__dirname, "src"),
     },
-    configure: (webpackConfig) => {
+    configure: (webpackConfig, { env, paths }) => {
       webpackConfig.watchOptions = {
         ...webpackConfig.watchOptions,
         ignored: [
@@ -29,7 +35,17 @@ module.exports = {
         ],
       };
 
-      // ✅ CRITICAL: VITE_API_URL client-side expose!
+      // ✅ SPA ROUTING FIX - Critical for React Router + Render
+      if (env === 'production') {
+        webpackConfig.output.publicPath = '/';
+        webpackConfig.plugins.push(
+          new webpack.DefinePlugin({
+            'process.env.PUBLIC_URL': JSON.stringify('')
+          })
+        );
+      }
+
+      // ✅ YOUR EXISTING ENV
       webpackConfig.plugins.push(
         new webpack.DefinePlugin({
           'window.ENV': JSON.stringify({
