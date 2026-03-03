@@ -18,7 +18,7 @@ export default function ChallengesPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [newTitle, setNewTitle] = useState('')
-  const [userJoinedChallenges, setUserJoinedChallenges] = useState([]) // ✅ Track joined
+  const [userJoinedChallenges, setUserJoinedChallenges] = useState([])
   const [loadingJoin, setLoadingJoin] = useState({})
   const [loadingDelete, setLoadingDelete] = useState({})
 
@@ -29,10 +29,9 @@ export default function ChallengesPage() {
       const token = await getToken()
       setAuthToken(token)
       
-      // ✅ Load ALL challenges
       const [challengesRes, joinedRes] = await Promise.allSettled([
         api.get('/api/challenges'),
-        api.get('/api/challenges/user-joined') // ✅ NEW: User's joined challenges
+        api.get('/api/challenges/user-joined')
       ])
       
       const challengesData = challengesRes.status === "fulfilled" 
@@ -43,12 +42,8 @@ export default function ChallengesPage() {
         ? (joinedRes.value.joined || joinedRes.value.data || []) 
         : []
       
-      // ✅ Set user's joined challenges
       setUserJoinedChallenges(joinedData.map(ch => ch.id))
-      
-      // ✅ Filter valid challenges
       const validChallenges = challengesData.filter(ch => !ch.is_deleted)
-      
       setChallenges(validChallenges)
       
     } catch (error) {
@@ -60,7 +55,7 @@ export default function ChallengesPage() {
           id: 'hydration-30days',
           title: '💧 30 Day Hydration Challenge',
           participants: 12,
-          myStatus: 'joined', // ✅ Proper fallback
+          myStatus: 'joined',
           is_public: true
         },
         {
@@ -87,7 +82,7 @@ export default function ChallengesPage() {
     return userJoinedChallenges.includes(challengeId)
   }
 
-  // ✅ JOIN CHALLENGE
+  // ✅ JOIN CHALLENGE - FIXED
   const handleJoin = async (challengeId, challengeTitle) => {
     if (loadingJoin[challengeId] || isJoined(challengeId)) return
     
@@ -100,7 +95,7 @@ export default function ChallengesPage() {
       
       toast.success(`🎉 Joined "${challengeTitle}"!`)
       
-      // ✅ Update local state - participant +1 & mark as joined
+      // ✅ Update local state instantly
       setChallenges(prev => prev.map(challenge =>
         challenge.id === challengeId
           ? { 
@@ -123,7 +118,7 @@ export default function ChallengesPage() {
     }
   }
 
-  // ✅ DELETE CHALLENGE
+  // ✅ DELETE CHALLENGE - FIXED
   const handleDelete = async (challengeId, challengeTitle) => {
     if (!confirm(`Delete "${challengeTitle}" permanently?`)) return
     
@@ -146,11 +141,10 @@ export default function ChallengesPage() {
   }
 
   const shareChallenge = (challenge) => {
-    const joinUrl = `${window.location.origin}/challenges/${challenge.id}/join`
-    
+    const joinUrl = `${window.location.origin}/challenges/${challenge.id}`
     if (navigator.clipboard) {
       navigator.clipboard.writeText(joinUrl)
-      toast.success('🔗 Direct join link copied!')
+      toast.success('🔗 Challenge link copied!')
     } else {
       prompt('Copy this link:', joinUrl)
     }
@@ -158,9 +152,10 @@ export default function ChallengesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full mx-auto mb-4" />
           <p className="text-muted-foreground">Loading challenges...</p>
         </div>
       </div>
@@ -168,19 +163,23 @@ export default function ChallengesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gradient-to-br from-background via-background/80 to-muted/20 p-6"
+    >
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* ✨ HEADER */}
+        {/* ✨ HEADER - YOUR UI */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }} 
           animate={{ opacity: 1, y: 0 }}
           className="flex justify-between items-center"
         >
           <div>
-            <h1 className="font-serif text-5xl font-light tracking-tight bg-gradient-to-r from-gray-900 to-blue-600 bg-clip-text text-transparent">
+            <h1 className="font-serif text-5xl font-light tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
               Challenges
             </h1>
-            <p className="text-xl text-gray-600 mt-2">
+            <p className="text-xl text-muted-foreground mt-2">
               Compete with {challenges.length > 0 ? `${challenges.length} active` : 'friends'}
             </p>
           </div>
@@ -193,20 +192,20 @@ export default function ChallengesPage() {
           </Button>
         </motion.div>
 
-        {/* 🎯 CHALLENGES GRID - FIXED LAYOUT */}
+        {/* 🎯 CHALLENGES GRID - YOUR UI */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
           {challenges.length === 0 ? (
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="col-span-full text-center py-32 bg-white/50 backdrop-blur-sm rounded-3xl p-12 border border-dashed border-gray-300"
+              className="col-span-full text-center py-32 bg-gradient-to-r from-muted/50 to-muted/30 backdrop-blur-sm rounded-3xl p-12 border border-border/50"
             >
               <div className="text-8xl mb-8 opacity-20 mx-auto">🏆</div>
-              <h2 className="text-4xl font-bold text-gray-500 mb-4">No Challenges</h2>
-              <p className="text-xl text-gray-500 mb-8 max-w-md mx-auto">
+              <h2 className="text-4xl font-bold text-muted-foreground mb-4">No Challenges</h2>
+              <p className="text-xl text-muted-foreground mb-8 max-w-md mx-auto">
                 Create your first challenge and invite friends to compete!
               </p>
-              <Button size="lg" className="h-14 px-12 rounded-2xl shadow-xl">
+              <Button size="lg" className="h-14 px-12 rounded-2xl shadow-xl bg-gradient-to-r from-primary to-primary/80">
                 Create First Challenge
               </Button>
             </motion.div>
@@ -219,14 +218,13 @@ export default function ChallengesPage() {
                 whileHover={{ y: -8 }}
                 className="group"
               >
-                {/* ✅ FIXED BOX DESIGN */}
-                <Card className="h-[480px] bg-gradient-to-br from-white to-blue-50/50 backdrop-blur-sm shadow-2xl border-0 hover:shadow-3xl transition-all duration-500 overflow-hidden">
+                {/* ✅ YOUR BOX DESIGN */}
+                <Card className="h-[480px] bg-gradient-to-br from-white to-primary/5 backdrop-blur-sm shadow-2xl border-0 hover:shadow-3xl transition-all duration-500 overflow-hidden">
                   
-                  {/* 🏆 HEADER */}
                   <CardHeader className="p-8 pb-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-2xl font-bold leading-tight line-clamp-2 group-hover:text-emerald-600 transition-colors">
+                        <CardTitle className="text-2xl font-bold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
                           {challenge.title}
                         </CardTitle>
                         
@@ -238,7 +236,7 @@ export default function ChallengesPage() {
                           </Badge>
                           
                           {challenge.is_public && (
-                            <Badge variant="outline" className="text-sm border-emerald-300 bg-emerald-50">
+                            <Badge variant="outline" className="text-sm border-primary/50 bg-primary/5">
                               <Globe className="w-3 h-3 mr-1" />
                               Public
                             </Badge>
@@ -246,19 +244,16 @@ export default function ChallengesPage() {
                         </div>
                       </div>
                       
-                      {/* 🏆 TROPHY */}
                       <div className="w-20 h-20 bg-gradient-to-br from-emerald-400/20 to-green-400/20 rounded-3xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-all duration-300">
                         <Trophy className="w-10 h-10 text-emerald-600 drop-shadow-lg" />
                       </div>
                     </div>
                   </CardHeader>
 
-                  {/* ✅ FIXED BUTTON LAYOUT */}
                   <CardContent className="p-8 pt-0 space-y-5">
-                    
-                    {/* 🎯 MAIN ACTION BUTTONS - BETTER SPACING */}
+                    {/* ✅ MAIN BUTTONS - FIXED LOGIC */}
                     <div className="space-y-3">
-                      {/* ✅ JOIN BUTTON - HIDE IF JOINED */}
+                      {/* JOIN BUTTON - HIDE IF JOINED */}
                       {!isJoined(challenge.id) ? (
                         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                           <Button
@@ -284,19 +279,18 @@ export default function ChallengesPage() {
                         <motion.div 
                           initial={{ scale: 0.95, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          className="w-full h-16 bg-gradient-to-r from-emerald-500/20 to-green-500/20 rounded-2xl border-2 border-emerald-300 flex items-center justify-center backdrop-blur-sm"
+                          className="w-full h-16 bg-gradient-to-r from-emerald-500/20 to-green-500/20 rounded-2xl border-2 border-emerald-300/50 flex items-center justify-center backdrop-blur-sm"
                         >
                           <Check className="w-8 h-8 text-emerald-500 mr-3" />
                           <span className="text-xl font-semibold text-emerald-600">✅ Participated!</span>
                         </motion.div>
                       )}
 
-                      {/* ✅ LEADERBOARD BUTTON */}
                       <motion.div whileHover={{ scale: 1.02 }}>
                         <Button
                           variant="outline"
                           size="lg"
-                          className="w-full h-14 rounded-2xl border-2 text-lg font-semibold border-emerald-300 hover:border-emerald-400 hover:bg-emerald-50 shadow-xl"
+                          className="w-full h-14 rounded-2xl border-2 text-lg font-semibold border-primary/50 hover:border-primary hover:bg-primary/5 shadow-xl"
                         >
                           <Trophy className="w-5 h-5 mr-3" />
                           View Leaderboard
@@ -304,19 +298,19 @@ export default function ChallengesPage() {
                       </motion.div>
                     </div>
 
-                    {/* ✅ SHARE BUTTON */}
+                    {/* SHARE BUTTON */}
                     <motion.div whileHover={{ scale: 1.02 }}>
                       <Button
                         onClick={() => shareChallenge(challenge)}
                         variant="ghost"
-                        className="w-full h-14 rounded-2xl justify-start gap-3 border-2 border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 group transition-all"
+                        className="w-full h-14 rounded-2xl justify-start gap-3 border-2 border-border hover:border-primary/50 hover:bg-primary/5 group transition-all"
                       >
                         <Share2 className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
                         <span className="font-medium">Share Join Link</span>
                       </Button>
                     </motion.div>
 
-                    {/* ✅ DELETE BUTTON */}
+                    {/* DELETE BUTTON */}
                     <motion.div whileHover={{ scale: 1.02 }}>
                       <Button
                         onClick={() => handleDelete(challenge.id, challenge.title)}
@@ -346,10 +340,12 @@ export default function ChallengesPage() {
       {/* CREATE DIALOG */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-2xl p-0 max-h-[90vh] overflow-hidden">
-          <div className="bg-gradient-to-br from-white to-emerald-50 p-8 rounded-3xl shadow-2xl">
+          <div className="bg-gradient-to-br from-background to-primary/5 p-8 rounded-3xl shadow-2xl backdrop-blur-sm">
             <DialogHeader>
               <DialogTitle className="text-3xl font-bold flex items-center gap-3">
-                <Globe className="w-12 h-12 bg-emerald-100 p-3 rounded-2xl" />
+                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Globe className="w-7 h-7 text-background" />
+                </div>
                 Create New Challenge
               </DialogTitle>
             </DialogHeader>
@@ -358,19 +354,19 @@ export default function ChallengesPage() {
                 placeholder="e.g. 💧 30 Day Hydration Challenge"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="h-16 text-xl rounded-2xl border-2 focus:border-emerald-400"
+                className="h-16 text-xl rounded-2xl border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
               <div className="flex gap-4 pt-4">
                 <Button 
                   onClick={() => {/* create logic */}}
-                  className="flex-1 h-16 rounded-2xl shadow-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-xl"
+                  className="flex-1 h-16 rounded-2xl shadow-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-xl hover:from-emerald-600"
                 >
                   Create & Share
                 </Button>
                 <Button 
                   onClick={() => setShowCreate(false)}
                   variant="outline"
-                  className="h-16 px-8 rounded-2xl"
+                  className="h-16 px-8 rounded-2xl border-2 border-border hover:border-primary"
                 >
                   Cancel
                 </Button>
@@ -379,6 +375,6 @@ export default function ChallengesPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   )
 }
