@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
       const token = await getToken()
       setAuthToken(token)
       
-      // ✅ YOUR BACKEND ENDPOINTS ONLY
+      // BACKEND ENDPOINTS ONLY
       const [analyticsRes, habitsRes] = await Promise.all([
         api.get('/api/analytics'),
         api.get('/api/habits')
@@ -39,7 +39,7 @@ export default function AnalyticsPage() {
     }
   }
 
-  // ✅ Transform YOUR backend data for charts
+  //  Transform  backend data for charts
   const trendsData = [
     { date: 'Mon', value: analytics?.todayLogs || 2 },
     { date: 'Tue', value: 5 },
@@ -75,7 +75,7 @@ export default function AnalyticsPage() {
           <p className="text-muted-foreground">Your real habit performance</p>
         </div>
 
-        {/* ✅ STATS FROM YOUR BACKEND */}
+        {/*  STATS FROM YOUR BACKEND */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="pb-3">
