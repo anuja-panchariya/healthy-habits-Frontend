@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [loadingReminder, setLoadingReminder] = useState(false);
 
-  // 🚀 FIXED: Wellness = 0 when NO habits (Priority order)
+  // 🚀 PERFECT WELLNESS CALCULATION: 1/2 = 50%, 2/2 = 100%
   const loadData = useCallback(async () => {
     try {
       const token = await getToken();
@@ -38,39 +38,50 @@ export default function Dashboard() {
         api.get("/api/habits/wellness-score")
       ]);
 
-      // ✅ STEP 1: Real habits from backend
+      // ✅ STEP 1: Get real habits
       const habitsData = habitsRes.status === "fulfilled" 
         ? (habitsRes.value.habits || habitsRes.value.data || []) 
         : [];
-      setHabits(habitsData);
-
-      // ✅ STEP 2: Real analytics
+      
+      // ✅ STEP 2: Get real analytics  
       const analyticsData = analyticsRes.status === "fulfilled" ? analyticsRes.value : {};
+      
+      // ✅ STEP 3: Get backend wellness (if available)
+      const wellnessData = wellnessRes.status === "fulfilled" ? wellnessRes.value : {};
+
+      setHabits(habitsData);
       setAnalytics(analyticsData);
 
-      // 🚀 STEP 3: FIXED WELLNESS LOGIC (Your requirement!)
-      let wellness = 0; // DEFAULT = 0%
-      
-      // ✅ PRIORITY 1: NO HABITS = 0% (Main requirement!)
+      // 🎯 PERFECT CALCULATION LOGIC:
+      let wellness = 0;
+
+      // CASE 1: No habits = 0%
       if (habitsData.length === 0) {
         wellness = 0;
-      } 
-      // ✅ PRIORITY 2: Backend wellness API
-      else if (wellnessRes.status === "fulfilled" && wellnessRes.value?.score) {
-        wellness = Math.max(0, Math.min(100, wellnessRes.value.score));
-      } 
-      // ✅ PRIORITY 3: Calculate from today's logs vs total habits
-      else if (analyticsData.todayLogs !== undefined && habitsData.length > 0) {
-        const completionRate = (analyticsData.todayLogs / habitsData.length) * 100;
-        wellness = Math.max(0, Math.min(100, completionRate));
       }
-      // ✅ PRIORITY 4: Default 0%
+      // CASE 2: Backend provides exact score (highest priority)
+      else if (wellnessData.score !== undefined && !isNaN(wellnessData.score)) {
+        wellness = Math.max(0, Math.min(100, parseFloat(wellnessData.score)));
+      }
+      // CASE 3: ✅ EXACT: (todayLogs / totalHabits) * 100
+      else if (analyticsData.todayLogs !== undefined && habitsData.length > 0) {
+        const exactPercentage = (analyticsData.todayLogs / habitsData.length) * 100;
+        wellness = Math.round(exactPercentage * 10) / 10; // 1 decimal precision
+      }
+
+      // 🔍 DEBUG CONSOLE (remove in production)
+      console.log('🔢 WELLNESS DEBUG:', {
+        totalHabits: habitsData.length,
+        todayLogs: analyticsData.todayLogs || 0,
+        backendScore: wellnessData.score,
+        calculated: wellness + '%'
+      });
 
       setWellnessScore(wellness);
 
     } catch (error) {
       console.error("Dashboard error:", error);
-      setWellnessScore(0); // Errors = 0%
+      setWellnessScore(0);
       setHabits([]);
     } finally {
       setLoading(false);
@@ -87,7 +98,7 @@ export default function Dashboard() {
       setAuthToken(token);
       await api.post(`/api/habits/${habitId}/log`);
       toast.success(`✅ ${habitTitle} logged!`);
-      loadData(); // Refresh → Wellness updates instantly!
+      loadData(); // ✅ Recalculates wellness instantly!
     } catch (error) {
       if (error.response?.status === 409) {
         toast.info("Already logged today! ✨");
@@ -109,7 +120,7 @@ export default function Dashboard() {
       setAuthToken(token);
       
       await api.post('/api/reminders/send', {
-        email: "user@example.com", // TODO: Get from Clerk
+        email: "user@example.com",
         habits: habits.slice(0, 5).map(habit => ({
           title: habit.title,
           category: habit.category || 'General'
@@ -153,7 +164,7 @@ export default function Dashboard() {
       data-testid="dashboard"
     >
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* ✨ HEADER WITH FLOATING ANIMATION */}
+        {/* ✨ HEADER */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -219,7 +230,7 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-        {/* 🔥 BENTO GRID WITH STAGGERED ANIMATIONS */}
+        {/* 🔥 BENTO GRID */}
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
           initial={{ opacity: 0 }}
@@ -227,7 +238,7 @@ export default function Dashboard() {
           transition={{ staggerChildren: 0.1 }}
         >
           
-          {/* 🌀 WELLNESS SCORE - MAIN CARD */}
+          {/* 🌀 WELLNESS SCORE */}
           <motion.div
             initial={{ y: 50, opacity: 0, scale: 0.9 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -272,7 +283,7 @@ export default function Dashboard() {
                     animate={{ opacity: 1 }}
                     className="mt-4 text-lg font-semibold"
                   >
-                    {wellnessScore >= 80 ? "🏆 Excellent!" : wellnessScore >= 50 ? "👍 Great!" : "💪 Keep going!"}
+                    {wellnessScore >= 80 ? "🏆 Excellent!" : wellnessScore >= 50 ? "👍 Great!" : wellnessScore > 0 ? "💪 Keep going!" : "No habits yet"}
                   </motion.p>
                 </motion.div>
               </CardContent>
@@ -299,7 +310,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex justify-between items-center p-3 bg-muted/50 rounded-xl group-hover:bg-muted/70 transition-all"
                 >
-                  <span className="text-muted-foreground">Habits</span>
+                  <span className="text-muted-foreground">Total Habits</span>
                   <motion.span 
                     className="font-bold text-xl text-primary"
                     animate={{ scale: [1, 1.1, 1] }}
@@ -323,7 +334,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 🔔 REMINDER BUTTON */}
+          {/* 🔔 REMINDERS */}
           <motion.div
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -367,7 +378,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 🎯 TODAY'S HABITS - FULL WIDTH */}
+          {/* 🎯 TODAY'S HABITS */}
           <motion.div
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
