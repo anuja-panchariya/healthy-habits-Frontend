@@ -1,16 +1,14 @@
-// src/lib/api.js - FULL FEATURES + setAuthToken SUPPORT
+// src/lib/api.js - FIXED NO DOUBLE /api/api/
 let authToken = null
 
-export const API_URL = 'https://healthy-habits-be-1.onrender.com/api'
+export const API_URL = 'https://healthy-habits-be-1.onrender.com'  // ✅ FIXED: No /api here!
 
-// ✅ setAuthToken FUNCTION (Aapke saare pages ke liye!)
 export const setAuthToken = (token) => {
   authToken = token
 }
 
-// ✅ apiFetch - Uses token if available
 export const apiFetch = async (endpoint, options = {}) => {
-  const url = `${API_URL}${endpoint}`
+  const url = `${API_URL}${endpoint}`  // ✅ /habits → /api/habits (backend handles)
   const config = {
     headers: { 
       'Content-Type': 'application/json',
@@ -28,7 +26,6 @@ export const apiFetch = async (endpoint, options = {}) => {
   return response.json()
 }
 
-// ✅ Backward compatibility - Aapke purane axios-style calls ke liye
 export const api = {
   get: (url) => apiFetch(url),
   post: (url, data) => apiFetch(url, { method: 'POST', body: JSON.stringify(data) }),
