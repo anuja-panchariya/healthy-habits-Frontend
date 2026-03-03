@@ -2,32 +2,25 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Trophy, Users, Crown, Flame, Zap, CheckCircle, Plus, Sun, Moon, 
-  Share2, Loader2, Target, TrendingUp 
+  Trophy, Users, Crown, Flame, Zap, CheckCircle, Plus, Sun, Moon, Target, TrendingUp 
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Switch } from '../components/ui/switch';
-import { api, setAuthToken } from '../lib/api';
 import { toast } from 'sonner';
 
 export default function ChallengesPage() {
-  const { getToken, userId } = useAuth();
+  const { userId } = useAuth();
   const [isDark, setIsDark] = useState(false);
   const [challenges, setChallenges] = useState([]);
   const [myChallenges, setMyChallenges] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedChallenge, setSelectedChallenge] = useState(null);
-  const [leaderboard, setLeaderboard] = useState([]);
+  const [userChallenges, setUserChallenges] = useState(new Set());
 
-  // 🎯 THEME TOGGLE
+  // 🎯 DARK MODE - localStorage sync
   useEffect(() => {
     const saved = localStorage.getItem('darkMode') === 'true';
     setIsDark(saved);
@@ -41,75 +34,95 @@ export default function ChallengesPage() {
     document.documentElement.classList.toggle('dark', newDark);
   };
 
-  // 🚀 LOAD CHALLENGES DATA
-  const loadChallengesData = useCallback(async () => {
+  // 🚀 MOCK DATA + localStorage (NO API calls!)
+  const loadChallengesData = useCallback(() => {
     try {
       setLoading(true);
-      const token = await getToken();
-      setAuthToken(token);
+      
+      // Load from localStorage or use defaults
+      const savedChallenges = JSON.parse(localStorage.getItem('challenges') || '[]');
+      const savedMyChallenges = JSON.parse(localStorage.getItem('myChallenges') || '[]');
+      const savedLeaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+      const savedUserChallenges = new Set(JSON.parse(localStorage.getItem('userChallenges') || '[]'));
 
-      const [challengesRes, myChallengesRes, leaderboardRes] = await Promise.allSettled([
-        api.get('/api/challenges'),
-        api.get('/api/challenges/my'),
-        api.get('/api/challenges/leaderboard')
-      ]);
+      // Default mock data
+      const defaultChallenges = [
+        { id: 1, title: '30 Day Water Challenge 💧', participants: 1245, progress: 67, reward: 'Hydration Master' },
+        { id: 2, title: '7 Day Meditation 🧘‍♀️', participants: 892, progress: 45, reward: 'Zen Master' },
+        { id: 3, title: '21 Day Fitness 🏋️', participants: 2345, progress: 78, reward: 'Fitness Pro' },
+        { id: 4, title: '14 Day Reading 📚', participants: 567, progress: 32, reward: 'Bookworm' }
+      ];
 
-      setChallenges(challengesRes.status === "fulfilled" ? (challengesRes.value.data || challengesRes.value || []) : []);
-      setMyChallenges(myChallengesRes.status === "fulfilled" ? (myChallengesRes.value.data || myChallengesRes.value || []) : []);
-      setLeaderboard(leaderboardRes.status === "fulfilled" ? (leaderboardRes.value.data || leaderboardRes.value || []) : []);
+      const defaultMyChallenges = [
+        { id: 1, title: '30 Day Water Challenge 💧', progress: 12, daysLeft: 18, streak: 5 }
+      ];
 
-    } catch (error) {
-      console.error('Challenges load error:', error);
-      // Mock data fallback
-      setChallenges([
-        { id: 1, title: '30 Day Water Challenge', participants: 1245, progress: 67, reward: '💧 Hydration Master', color: 'from-blue-500 to-cyan-500' },
-        { id: 2, title: '7 Day Meditation Streak', participants: 892, progress: 45, reward: '🧘‍♀️ Zen Master', color: 'from-purple-500 to-pink-500' },
-        { id: 3, title: '21 Day Fitness Challenge', participants: 2345, progress: 78, reward: '🏋️ Fitness Pro', color: 'from-emerald-500 to-green-600' }
-      ]);
-      setMyChallenges([
-        { id: 1, title: '30 Day Water Challenge', progress: 12, daysLeft: 18, streak: 5, completed: false }
-      ]);
-      setLeaderboard([
+      const defaultLeaderboard = [
         { name: 'Anuja Panchariya', score: 245, rank: 1 },
         { name: 'Rahul Sharma', score: 198, rank: 2 },
-        { name: 'Priya Patel', score: 167, rank: 3 }
-      ]);
+        { name: 'Priya Patel', score: 167, rank: 3 },
+        { name: 'Amit Kumar', score: 156, rank: 4 }
+      ];
+
+      setChallenges(savedChallenges.length ? savedChallenges : defaultChallenges);
+      setMyChallenges(savedMyChallenges.length ? savedMyChallenges : defaultMyChallenges);
+      setLeaderboard(savedLeaderboard.length ? savedLeaderboard : defaultLeaderboard);
+      setUserChallenges(savedUserChallenges);
+      
+    } catch (error) {
+      console.error('Challenges load error:', error);
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, []);
+
+  // 🎯 JOIN CHALLENGE (localStorage)
+  const joinChallenge = (challengeId) => {
+    if (userChallenges.has(challengeId)) {
+      toast.info('Already joined this challenge! ✨');
+      return;
+    }
+
+    const newUserChallenges = new Set(userChallenges);
+    newUserChallenges.add(challengeId);
+    setUserChallenges(newUserChallenges);
+    localStorage.setItem('userChallenges', JSON.stringify(Array.from(newUserChallenges)));
+
+    // Add to my challenges
+    const challenge = challenges.find(c => c.id === challengeId);
+    if (challenge) {
+      const newMyChallenge = {
+        id: challengeId,
+        title: challenge.title,
+        progress: 0,
+        daysLeft: 30,
+        streak: 1
+      };
+      setMyChallenges(prev => [newMyChallenge, ...prev]);
+      localStorage.setItem('myChallenges', JSON.stringify([newMyChallenge, ...myChallenges]));
+    }
+
+    toast.success('✅ Joined challenge! Start logging progress!');
+  };
+
+  // 🏆 LOG PROGRESS (localStorage)
+  const logChallengeProgress = (challengeId) => {
+    setMyChallenges(prev => prev.map(challenge => 
+      challenge.id === challengeId
+        ? { ...challenge, progress: Math.min(100, challenge.progress + 10), streak: challenge.streak + 1 }
+        : challenge
+    ));
+    localStorage.setItem('myChallenges', JSON.stringify(myChallenges.map(challenge => 
+      challenge.id === challengeId
+        ? { ...challenge, progress: Math.min(100, challenge.progress + 10), streak: challenge.streak + 1 }
+        : challenge
+    )));
+    toast.success('✅ Progress logged! Great job!');
+  };
 
   useEffect(() => {
-    if (userId) {
-      loadChallengesData();
-    }
-  }, [userId, loadChallengesData]);
-
-  // 🎯 JOIN CHALLENGE
-  const joinChallenge = async (challengeId) => {
-    try {
-      const token = await getToken();
-      setAuthToken(token);
-      await api.post(`/api/challenges/${challengeId}/join`);
-      toast.success('✅ Joined challenge!');
-      loadChallengesData();
-    } catch (error) {
-      toast.error('Failed to join challenge');
-    }
-  };
-
-  // 🏆 LOG CHALLENGE PROGRESS
-  const logChallengeProgress = async (challengeId) => {
-    try {
-      const token = await getToken();
-      setAuthToken(token);
-      await api.post(`/api/challenges/${challengeId}/progress`);
-      toast.success('✅ Progress logged!');
-      loadChallengesData();
-    } catch (error) {
-      toast.error('Failed to log progress');
-    }
-  };
+    loadChallengesData();
+  }, [loadChallengesData]);
 
   if (loading) {
     return (
@@ -118,9 +131,9 @@ export default function ChallengesPage() {
           <motion.div 
             animate={{ rotate: 360 }} 
             transition={{ duration: 1, repeat: Infinity }}
-            className="w-16 h-16 border-4 border-emerald-200 dark:border-slate-500 border-t-emerald-500 dark:border-t-slate-300 rounded-full mx-auto mb-4" 
+            className="w-16 h-16 border-4 border-emerald-200 dark:border-emerald-400/50 border-t-emerald-500 dark:border-t-emerald-400 rounded-full mx-auto mb-4" 
           />
-          <p className="text-gray-600 dark:text-slate-300 text-lg">Loading challenges...</p>
+          <p className="text-slate-600 dark:text-slate-300 text-lg">Loading challenges...</p>
         </div>
       </motion.div>
     );
@@ -130,44 +143,44 @@ export default function ChallengesPage() {
     <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
-      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8 transition-all duration-300"
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8 transition-all duration-500"
     >
       <div className="max-w-7xl mx-auto space-y-8 relative">
         
         {/* 🌙 THEME TOGGLE */}
         <motion.div 
-          className="absolute top-6 right-6 z-50 flex items-center gap-2 p-3 rounded-2xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-emerald-200 dark:border-slate-600 shadow-xl hover:shadow-2xl"
+          className="absolute top-6 right-6 z-50 flex items-center gap-2 p-3 rounded-2xl bg-white/90 dark:bg-slate-800/95 backdrop-blur-xl shadow-2xl border border-emerald-200/50 dark:border-slate-600/70 hover:shadow-3xl transition-all"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
         >
-          <Sun className={`w-5 h-5 ${isDark ? 'text-slate-500' : 'text-emerald-500'}`} />
+          <Sun className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-emerald-500'}`} />
           <Switch checked={isDark} onCheckedChange={toggleDarkMode} />
-          <Moon className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-slate-500'}`} />
+          <Moon className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-slate-400'}`} />
         </motion.div>
 
         {/* ✨ HEADER */}
         <motion.div
-          initial={{ y: -20, opacity: 0 }}
+          initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6"
+          className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pt-20 lg:pt-24 pb-8"
         >
           <div>
-            <h1 className="font-serif font-light text-5xl lg:text-6xl tracking-tight bg-gradient-to-r from-gray-900 dark:from-slate-100 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent mb-2">
+            <h1 className="font-serif font-light text-5xl lg:text-6xl tracking-tight bg-gradient-to-r from-slate-900 dark:from-slate-100 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent drop-shadow-lg mb-3">
               Challenges
             </h1>
-            <p className="text-xl text-gray-600 dark:text-slate-300">
-              Compete with friends • Win rewards • Build streaks
+            <p className="text-xl text-slate-600 dark:text-slate-300 font-semibold">
+              Compete • Win badges • Build streaks 🔥
             </p>
           </div>
           
           <div className="flex gap-3">
-            <Button className="h-14 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 dark:from-emerald-600 dark:to-emerald-500 shadow-xl text-lg font-semibold text-white">
+            <Button className="h-14 px-8 rounded-2xl bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 shadow-xl text-lg font-semibold text-slate-900 border border-yellow-300/50">
               <Crown className="w-5 h-5 mr-2" />
               Leaderboard
             </Button>
             <Button 
               onClick={() => setShowCreateDialog(true)}
-              className="h-14 px-8 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 shadow-xl text-lg font-semibold text-white"
+              className="h-14 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 shadow-xl text-lg font-semibold text-slate-900 dark:text-slate-50 border border-emerald-300/50"
             >
               <Plus className="w-5 h-5 mr-2" />
               New Challenge
@@ -175,134 +188,138 @@ export default function ChallengesPage() {
           </div>
         </motion.div>
 
+        {/* 📊 MAIN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* 🏆 ACTIVE CHALLENGES */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-2xl dark:shadow-3xl border-0 h-[32rem] overflow-hidden">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-2xl text-gray-900 dark:text-white">
-                  <Trophy className="w-8 h-8 text-yellow-500" />
+            <Card className="h-[36rem] lg:h-[40rem] bg-white/90 dark:bg-slate-800/95 backdrop-blur-xl shadow-2xl dark:shadow-slate-900/60 border-0 overflow-hidden">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-4 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  <Trophy className="w-10 h-10 text-yellow-500 drop-shadow-lg" />
                   Active Challenges
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="max-h-[26rem] overflow-y-auto space-y-4 p-6">
-                  {challenges.map((challenge) => (
+                <div className="max-h-[30rem] overflow-y-auto space-y-6 p-8 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                  {Array.isArray(challenges) && challenges.map((challenge) => (
                     <motion.div
                       key={challenge.id}
                       whileHover={{ scale: 1.02 }}
-                      className="group bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-slate-700/50 dark:to-slate-600/20 p-6 rounded-3xl border-2 border-emerald-200 dark:border-slate-500 hover:border-emerald-300 dark:hover:border-slate-400 transition-all backdrop-blur-sm"
+                      className="group bg-white/80 dark:bg-slate-800/70 backdrop-blur-xl p-8 rounded-3xl border-2 border-emerald-200/50 dark:border-slate-700/70 hover:border-emerald-400/70 dark:hover:border-emerald-400 hover:shadow-2xl transition-all duration-300"
                     >
-                      <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-start justify-between gap-6">
                         <div className="flex-1">
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 truncate">{challenge.title}</h3>
-                          <div className="flex items-center gap-4 mb-3">
-                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white shadow-lg">
-                              {challenge.reward}
-                            </Badge>
-                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
-                              <Users className="w-4 h-4" />
+                          <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                            {challenge.title}
+                          </h3>
+                          <Badge className="text-lg px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-slate-900 font-bold shadow-lg mb-6">
+                            {challenge.reward}
+                          </Badge>
+                          <div className="flex items-center gap-6 mb-4 text-sm">
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                              <Users className="w-5 h-5" />
                               {challenge.participants.toLocaleString()} joined
                             </div>
                           </div>
-                          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
+                          <div className="w-full bg-slate-200/50 dark:bg-slate-700/70 rounded-2xl h-4 shadow-inner mb-3">
                             <div 
-                              className="h-3 bg-gradient-to-r from-emerald-500 to-green-600 dark:from-emerald-400 dark:to-emerald-300 rounded-full shadow-lg"
+                              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-400 dark:to-emerald-500 rounded-2xl shadow-lg"
                               style={{ width: `${challenge.progress}%` }}
                             />
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-slate-400 mt-2">{challenge.progress}% complete</p>
+                          <p className="text-xl font-semibold text-slate-700 dark:text-slate-300">
+                            {challenge.progress}% community progress
+                          </p>
                         </div>
-                        <div className="flex flex-col gap-2 ml-4 flex-shrink-0">
+                        <div className="flex flex-col gap-3 ml-6 flex-shrink-0">
                           <Button
                             onClick={() => joinChallenge(challenge.id)}
-                            size="sm"
-                            className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 dark:from-emerald-600 dark:to-emerald-500 text-white shadow-lg px-6 py-2 rounded-xl"
+                            size="lg"
+                            className="h-14 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 dark:from-emerald-400 dark:to-emerald-500 shadow-2xl text-lg font-bold text-slate-900 dark:text-slate-50 border border-emerald-300/50"
                           >
-                            Join Now
+                            {userChallenges.has(challenge.id) ? 'Joined ✅' : 'Join Now'}
                           </Button>
-                          <Button
+                          <Button 
                             variant="outline"
-                            size="sm"
-                            className="border-emerald-300 dark:border-slate-500 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-600 dark:text-emerald-400 px-6 py-2 rounded-xl"
+                            size="lg"
+                            className="h-14 px-8 rounded-2xl border-2 border-slate-300/50 dark:border-slate-500/70 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-lg font-semibold"
                           >
-                            View
+                            Details
                           </Button>
                         </div>
                       </div>
                     </motion.div>
                   ))}
-                  {challenges.length === 0 && (
-                    <div className="text-center py-12">
-                      <Trophy className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4 opacity-40" />
-                      <h3 className="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">No challenges yet</h3>
-                      <p className="text-gray-500 dark:text-slate-400 mb-6">Be the first to create one!</p>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 📊 MY CHALLENGES */}
+          {/* 🔥 MY CHALLENGES */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            <Card className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-2xl dark:shadow-3xl border-0 h-[32rem] overflow-hidden">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-2xl text-gray-900 dark:text-white">
-                  <Flame className="w-8 h-8 text-orange-500" />
+            <Card className="h-[36rem] lg:h-[40rem] bg-white/90 dark:bg-slate-800/95 backdrop-blur-xl shadow-2xl dark:shadow-slate-900/60 border-0 overflow-hidden">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-4 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  <Flame className="w-10 h-10 text-orange-500 drop-shadow-lg animate-pulse" />
                   My Challenges
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="max-h-[26rem] overflow-y-auto space-y-4 p-6">
-                  {myChallenges.map((challenge) => (
-                    <motion.div
-                      key={challenge.id}
-                      whileHover={{ scale: 1.02 }}
-                      className="group bg-gradient-to-r from-orange-50/50 to-orange-100/30 dark:from-slate-700/50 dark:to-slate-600/20 p-6 rounded-3xl border-2 border-orange-200 dark:border-slate-500 hover:border-orange-300 transition-all backdrop-blur-sm"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{challenge.title}</h4>
-                          <div className="flex items-center gap-4 mb-3 text-sm">
-                            <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                              <TrendingUp className="w-4 h-4" />
-                              Streak: {challenge.streak} days
+                <div className="max-h-[30rem] overflow-y-auto space-y-6 p-8 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                  {Array.isArray(myChallenges) && myChallenges.length > 0 ? (
+                    myChallenges.map((challenge) => (
+                      <motion.div
+                        key={challenge.id}
+                        whileHover={{ scale: 1.02 }}
+                        className="group bg-gradient-to-r from-orange-50/80 to-orange-100/50 dark:from-slate-800/70 dark:to-slate-700/40 p-8 rounded-3xl border-2 border-orange-200/70 dark:border-orange-400/50 hover:shadow-2xl transition-all duration-300"
+                      >
+                        <div className="flex items-start justify-between gap-6">
+                          <div className="flex-1">
+                            <h4 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 group-hover:text-orange-600 dark:group-hover:text-orange-400">
+                              {challenge.title}
+                            </h4>
+                            <div className="flex items-center gap-6 mb-6 text-lg">
+                              <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-semibold">
+                                <TrendingUp className="w-6 h-6" />
+                                Streak: {challenge.streak} days
+                              </div>
+                              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                <Target className="w-6 h-6" />
+                                {challenge.daysLeft} days left
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                              <Target className="w-4 h-4" />
-                              {challenge.daysLeft} days left
+                            <div className="w-full bg-slate-200/50 dark:bg-slate-700/70 rounded-2xl h-5 shadow-inner mb-4">
+                              <div 
+                                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-400 dark:to-emerald-500 rounded-2xl shadow-lg"
+                                style={{ width: `${challenge.progress}%` }}
+                              />
                             </div>
                           </div>
-                          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 mb-3">
-                            <div 
-                              className="h-3 bg-gradient-to-r from-emerald-500 to-green-600 dark:from-emerald-400 dark:to-emerald-300 rounded-full shadow-lg"
-                              style={{ width: `${(challenge.progress || 0)}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 ml-4 flex-shrink-0">
                           <Button
                             onClick={() => logChallengeProgress(challenge.id)}
-                            size="sm"
-                            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 shadow-lg px-6 py-2 rounded-xl text-white"
+                            size="lg"
+                            className="h-14 px-8 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 shadow-2xl text-lg font-bold text-slate-900 dark:text-slate-50 border border-orange-400/50"
                           >
-                            <CheckCircle className="w-4 h-4 mr-1" />
+                            <CheckCircle className="w-5 h-5 mr-2" />
                             Log Today
                           </Button>
-                          <Button size="sm" variant="ghost" className="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white">
-                            Share
-                          </Button>
                         </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center py-16">
+                      <Flame className="w-24 h-24 text-slate-300 dark:text-slate-600 mx-auto mb-8 opacity-50" />
+                      <h3 className="text-3xl font-bold text-slate-700 dark:text-slate-200 mb-4">No challenges yet</h3>
+                      <p className="text-xl text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                        Join challenges to compete with friends and win badges!
+                      </p>
+                      <div className="space-y-3">
+                        <Button className="h-14 px-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 shadow-xl text-xl font-bold">
+                          <Trophy className="w-6 h-6 mr-2" />
+                          Browse Challenges
+                        </Button>
                       </div>
-                    </motion.div>
-                  ))}
-                  {myChallenges.length === 0 && (
-                    <div className="text-center py-12">
-                      <Flame className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4 opacity-40" />
-                      <h3 className="text-xl font-bold text-gray-700 dark:text-slate-200 mb-2">No challenges joined</h3>
-                      <p className="text-gray-500 dark:text-slate-400 mb-6">Join challenges to start competing!</p>
                     </div>
                   )}
                 </div>
@@ -315,30 +332,30 @@ export default function ChallengesPage() {
         <motion.div 
           initial={{ opacity: 0, y: 30 }} 
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
         >
-          <Card className="lg:col-span-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-2xl dark:shadow-3xl border-0">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-2xl text-gray-900 dark:text-white">
-                <Crown className="w-8 h-8 text-yellow-500" />
+          <Card className="lg:col-span-2 h-96 bg-white/90 dark:bg-slate-800/95 backdrop-blur-xl shadow-2xl dark:shadow-slate-900/60 border-0">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-4 text-3xl font-bold text-slate-900 dark:text-slate-100">
+                <Crown className="w-12 h-12 text-yellow-500 drop-shadow-2xl" />
                 Global Leaderboard
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-3">
-                {leaderboard.slice(0, 10).map((user, idx) => (
+            <CardContent className="p-8">
+              <div className="space-y-4">
+                {Array.isArray(leaderboard) && leaderboard.slice(0, 8).map((user) => (
                   <motion.div
                     key={user.name}
-                    className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-gray-50 to-emerald-50/30 dark:from-slate-700/50 dark:to-slate-600/20 border border-emerald-200 dark:border-slate-500 hover:shadow-md transition-all"
+                    className="flex items-center gap-6 p-6 rounded-3xl bg-gradient-to-r from-slate-50/80 to-emerald-50/50 dark:from-slate-800/70 dark:to-slate-700/40 border-2 border-slate-200/50 dark:border-slate-600/70 hover:shadow-xl transition-all hover:border-emerald-400/70 dark:hover:border-emerald-400"
                   >
-                    <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                    <div className="w-14 h-14 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-3xl flex items-center justify-center text-slate-900 font-black text-2xl shadow-2xl flex-shrink-0">
                       #{user.rank}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</p>
-                      <p className="text-sm text-gray-600 dark:text-slate-400">{user.score} points</p>
+                      <p className="text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{user.name}</p>
+                      <p className="text-lg text-slate-600 dark:text-slate-400">{user.score} points</p>
                     </div>
-                    <Badge className="bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg">
+                    <Badge className="text-xl px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-900 font-bold shadow-lg h-fit">
                       Top {user.rank}
                     </Badge>
                   </motion.div>
@@ -347,23 +364,33 @@ export default function ChallengesPage() {
             </CardContent>
           </Card>
 
-          {/* 📱 QUICK ACTIONS */}
-          <Card className="bg-gradient-to-br from-emerald-50/50 to-green-50/30 dark:from-slate-700/50 dark:to-slate-600/20 shadow-2xl dark:shadow-3xl border-0 backdrop-blur-sm h-fit">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
-                <Zap className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+          {/* ⚡ QUICK ACTIONS */}
+          <Card className="h-96 bg-gradient-to-br from-emerald-500/10 to-emerald-400/10 dark:from-slate-800/60 dark:to-slate-700/40 shadow-2xl dark:shadow-slate-900/60 border border-emerald-200/30 dark:border-slate-700/60 backdrop-blur-xl">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-4 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                <Zap className="w-10 h-10 text-emerald-500 dark:text-emerald-400 animate-pulse" />
                 Quick Actions
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 p-6">
-              <Button className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 dark:from-emerald-600 dark:to-emerald-500 shadow-xl text-white">
-                <Share2 className="w-5 h-5 mr-2" />
-                Invite Friends
-              </Button>
-              <Button className="w-full h-12 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 shadow-xl text-white">
-                <Trophy className="w-5 h-5 mr-2" />
-                View Rewards
-              </Button>
+            <CardContent className="p-8 space-y-6">
+              <motion.div whileHover={{ scale: 1.02 }}>
+                <Button className="w-full h-16 rounded-3xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 shadow-2xl text-xl font-bold text-slate-900 dark:text-slate-50 border border-emerald-300/50">
+                  <Users className="w-6 h-6 mr-3" />
+                  Invite Friends
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }}>
+                <Button className="w-full h-16 rounded-3xl bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 shadow-2xl text-xl font-bold text-slate-50">
+                  <Trophy className="w-6 h-6 mr-3" />
+                  View Rewards
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }}>
+                <Button className="w-full h-16 rounded-3xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 shadow-2xl text-xl font-bold text-slate-900 dark:text-slate-50 border border-orange-400/50">
+                  <Share2 className="w-6 h-6 mr-3" />
+                  Share Progress
+                </Button>
+              </motion.div>
             </CardContent>
           </Card>
         </motion.div>
@@ -375,47 +402,26 @@ export default function ChallengesPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             >
               <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-emerald-200 dark:border-slate-600"
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-2xl rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-emerald-200/50 dark:border-slate-700"
               >
-                <div className="p-8">
-                  <h2 className="text-3xl font-serif font-light bg-gradient-to-r from-gray-900 dark:from-slate-100 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent mb-8 text-center">
-                    Create New Challenge
+                <div className="p-10">
+                  <h2 className="text-5xl font-serif font-light bg-gradient-to-r from-slate-900 dark:from-slate-100 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent mb-10 text-center drop-shadow-2xl">
+                    Create Challenge
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <input 
-                      placeholder="Challenge Name (e.g. 30 Day Pushups)" 
-                      className="w-full p-4 border-2 border-emerald-200 dark:border-slate-500 rounded-2xl text-lg bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-                    />
-                    <input 
-                      placeholder="Duration (days)" 
-                      type="number"
-                      className="w-full p-4 border-2 border-emerald-200 dark:border-slate-500 rounded-2xl text-lg bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <select className="w-full p-4 border-2 border-emerald-200 dark:border-slate-500 rounded-2xl text-lg bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white">
-                      <option>fitness</option>
-                      <option>hydration</option>
-                      <option>mindfulness</option>
-                    </select>
-                    <input 
-                      placeholder="Reward Badge (e.g. 💪 Fitness Beast)"
-                      className="w-full p-4 border-2 border-emerald-200 dark:border-slate-500 rounded-2xl text-lg bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex gap-4 mt-8 pt-6 border-t border-emerald-200 dark:border-slate-600">
-                    <Button className="flex-1 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 shadow-xl font-semibold text-lg text-white">
+                  {/* Form content here */}
+                  <div className="flex gap-6 pt-8 border-t border-slate-200 dark:border-slate-700">
+                    <Button className="flex-1 h-20 rounded-3xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 shadow-2xl text-2xl font-bold text-slate-900 dark:text-slate-50">
                       Create Challenge
                     </Button>
                     <Button 
                       onClick={() => setShowCreateDialog(false)}
-                      className="h-14 px-12 rounded-2xl border-2 border-emerald-300 dark:border-slate-500 hover:bg-emerald-50 dark:hover:bg-slate-700 font-semibold text-lg text-gray-700 dark:text-slate-200"
+                      className="h-20 px-16 rounded-3xl border-2 border-slate-300 dark:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-xl text-2xl font-bold text-slate-700 dark:text-slate-300"
                     >
                       Cancel
                     </Button>
