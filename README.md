@@ -5,7 +5,6 @@ Modern habit tracking application built with React, Redux, and Tailwind CSS.
 ## Tech Stack
 
 - **React 19** - UI library
-- **Redux Toolkit** - State management
 - **React Router** - Navigation
 - **Tailwind CSS** - Styling
 - **Shadcn/UI** - Component library
