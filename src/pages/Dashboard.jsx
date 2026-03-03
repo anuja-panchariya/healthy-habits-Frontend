@@ -25,7 +25,21 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState({});
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  
+
+  // 🎯 THEME TOGGLE
+  useEffect(() => {
+    const saved = localStorage.getItem('darkMode') === 'true';
+    setIsDark(saved);
+    document.documentElement.classList.toggle('dark', saved);
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    localStorage.setItem('darkMode', newDark);
+    document.documentElement.classList.toggle('dark', newDark);
+  };
+
   // 🎯 CLEAN WELLNESS CALCULATION (0% if no habits)
   const calculateWellnessScore = useCallback((habitsData, analyticsData) => {
     if (!habitsData?.length) {
