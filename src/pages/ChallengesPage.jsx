@@ -22,7 +22,7 @@ export default function ChallengesPage() {
   const [loadingJoin, setLoadingJoin] = useState({})
   const [loadingDelete, setLoadingDelete] = useState({})
 
-  // ✅ FIXED: Load challenges + user's joined status
+  //  Load challenges + user's joined status
   const loadChallenges = useCallback(async () => {
     try {
       setLoading(true)
@@ -49,7 +49,7 @@ export default function ChallengesPage() {
     } catch (error) {
       console.error('Challenges load error:', error)
       
-      // ✅ FALLBACK with proper participants count
+      // FALLBACK with proper participants count
       const demoChallenges = [
         {
           id: 'hydration-30days',
@@ -77,12 +77,12 @@ export default function ChallengesPage() {
     loadChallenges()
   }, [loadChallenges])
 
-  // ✅ FIXED: Hide Join button if already joined
+  // Hide Join button if already joined
   const isJoined = (challengeId) => {
     return userJoinedChallenges.includes(challengeId)
   }
 
-  // ✅ JOIN CHALLENGE - FIXED
+  //  JOIN CHALLENGE 
   const handleJoin = async (challengeId, challengeTitle) => {
     if (loadingJoin[challengeId] || isJoined(challengeId)) return
     
@@ -95,7 +95,7 @@ export default function ChallengesPage() {
       
       toast.success(`🎉 Joined "${challengeTitle}"!`)
       
-      // ✅ Update local state instantly
+      //  Update local state instantly
       setChallenges(prev => prev.map(challenge =>
         challenge.id === challengeId
           ? { 
@@ -118,7 +118,7 @@ export default function ChallengesPage() {
     }
   }
 
-  // ✅ DELETE CHALLENGE - FIXED
+  // DELETE CHALLENGE 
   const handleDelete = async (challengeId, challengeTitle) => {
     if (!confirm(`Delete "${challengeTitle}" permanently?`)) return
     
@@ -169,7 +169,7 @@ export default function ChallengesPage() {
       className="min-h-screen bg-gradient-to-br from-background via-background/80 to-muted/20 p-6"
     >
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* ✨ HEADER - YOUR UI */}
+        {/* ✨ HEADER -  UI */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }} 
           animate={{ opacity: 1, y: 0 }}
@@ -218,7 +218,7 @@ export default function ChallengesPage() {
                 whileHover={{ y: -8 }}
                 className="group"
               >
-                {/* ✅ YOUR BOX DESIGN */}
+                {/*  YOUR BOX DESIGN */}
                 <Card className="h-[480px] bg-gradient-to-br from-white to-primary/5 backdrop-blur-sm shadow-2xl border-0 hover:shadow-3xl transition-all duration-500 overflow-hidden">
                   
                   <CardHeader className="p-8 pb-6">
@@ -228,7 +228,7 @@ export default function ChallengesPage() {
                           {challenge.title}
                         </CardTitle>
                         
-                        {/* ✅ PARTICIPANTS BADGE */}
+                        {/*  PARTICIPANTS BADGE */}
                         <div className="flex items-center gap-3 mt-4">
                           <Badge className="text-lg px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 shadow-lg">
                             <Users className="w-4 h-4 mr-2" />
@@ -251,7 +251,7 @@ export default function ChallengesPage() {
                   </CardHeader>
 
                   <CardContent className="p-8 pt-0 space-y-5">
-                    {/* ✅ MAIN BUTTONS - FIXED LOGIC */}
+                    {/*  MAIN BUTTONS - FIXED LOGIC */}
                     <div className="space-y-3">
                       {/* JOIN BUTTON - HIDE IF JOINED */}
                       {!isJoined(challenge.id) ? (
