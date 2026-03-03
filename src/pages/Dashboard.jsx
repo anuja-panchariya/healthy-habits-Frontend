@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  TrendingUp, Activity, Target, Flame, Plus, Bell, Clock, CheckCircle, Zap, AlertTriangle 
+  TrendingUp, Activity, Target, Flame, Plus, Clock, CheckCircle, Zap 
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -23,97 +23,37 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState({});
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [loadingReminder, setLoadingReminder] = useState(false);
-  const [showLowScoreAlert, setShowLowScoreAlert] = useState(false);
-  const [categoryStats, setCategoryStats] = useState({});
 
-  //  TRUE WELLNESS FORMULA - Category Weighted (0% if no habits!)
-  const calculateRealWellnessScore = useCallback((habitsData, analyticsData) => {
-    console.log('🔢 Calculating wellness with:', habitsData.length, 'habits');
-    
-    //  NO HABITS = 0% (NOT 50%)
+  // 🎯 CLEAN WELLNESS CALCULATION (0% if no habits)
+  const calculateWellnessScore = useCallback((habitsData, analyticsData) => {
     if (!habitsData?.length) {
-      console.log('❌ No habits = 0% wellness');
-      return 0;
+      return 0; // ✅ NO HABITS = CLEAN 0%
     }
 
-    // CATEGORY WEIGHTS [web:204]
-    const categoryWeights = {
-      fitness: 0.35,      // 35% - Exercise
-      sleep: 0.25,        // 25% - Sleep  
-      hydration: 0.20,    // 20% - Water
-      mindfulness: 0.15,  // 15% - Meditation
-      nutrition: 0.05     // 5% - Food
-    };
-
-    const categoryStats = {};
-    let totalCompleted = 0;
-    let totalHabits = 0;
-
-    // Group by category + check completion
+    let completedToday = 0;
     habitsData.forEach(habit => {
-      const cat = (habit.category || 'general').toLowerCase();
-      categoryStats[cat] = categoryStats[cat] || { total: 0, completed: 0, weight: categoryWeights[cat] || 0.05 };
-      categoryStats[cat].total += 1;
-      totalHabits += 1;
-
-      // Check if completed TODAY (multiple sources)
       const isCompletedToday = 
         analyticsData.todayLogs?.includes(habit.id) ||
         habit.loggedToday === true ||
-        habit.status === 'completed' ||
-        analyticsData[`habit_${habit.id}`] === 'completed' ||
         new Date(habit.lastLogged).toDateString() === new Date().toDateString();
-
-      if (isCompletedToday) {
-        categoryStats[cat].completed += 1;
-        totalCompleted += 1;
-      }
+      
+      if (isCompletedToday) completedToday++;
     });
 
-    // Calculate weighted score per category
-    let weightedScore = 0;
-    let totalWeight = 0;
+    const score = habitsData.length > 0 ? Math.round((completedToday / habitsData.length) * 100) : 0;
+    return Math.max(0, Math.min(100, score));
+  }, []);
 
-    Object.values(categoryStats).forEach(cat => {
-      if (cat.total > 0) {
-        const categoryCompletion = (cat.completed / cat.total) * 100;
-        weightedScore += (categoryCompletion * cat.weight);
-        totalWeight += cat.weight;
-      }
-    });
-
-    const finalScore = totalWeight > 0 ? Math.round(weightedScore) : 0;
-    
-    console.log('📊 WELLNESS BREAKDOWN:', {
-      totalHabits,
-      totalCompleted,
-      categoryStats,
-      finalScore: `${finalScore}%`
-    });
-
-    //  LOW SCORE ALERT TRIGGER
-    if (finalScore < 50 && !showLowScoreAlert) {
-      setShowLowScoreAlert(true);
-      setTimeout(() => setShowLowScoreAlert(false), 10000);
-    }
-
-    setCategoryStats(categoryStats);
-    return Math.max(0, Math.min(100, finalScore));
-  }, [showLowScoreAlert]);
-
-  // 🚀 LOAD REAL DATA + CALCULATE
+  // 🚀 LOAD DATA
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken();
       setAuthToken(token);
 
-      //  PRIORITY 1: Backend wellness API
-      const [habitsRes, analyticsRes, wellnessRes] = await Promise.allSettled([
+      const [habitsRes, analyticsRes] = await Promise.allSettled([
         api.get("/api/habits"),
-        api.get("/api/analytics"),
-        api.get("/api/habits/wellness-score") // Backend calculation
+        api.get("/api/analytics")
       ]);
 
       const habitsData = habitsRes.status === "fulfilled" 
@@ -121,100 +61,56 @@ export default function Dashboard() {
         : [];
       
       const analyticsData = analyticsRes.status === "fulfilled" ? analyticsRes.value : {};
-      const backendWellness = wellnessRes.status === "fulfilled" ? wellnessRes.value : {};
-
+      
       setHabits(habitsData);
       setAnalytics(analyticsData);
-
-      // 🎯 WELLNESS PRIORITY:
-      let wellness = 0;
       
-      // 1️⃣ Backend API (highest priority)
-      if (backendWellness?.score !== undefined && !isNaN(backendWellness.score)) {
-        wellness = parseFloat(backendWellness.score);
-        console.log('✅ Backend wellness:', wellness);
-      }
-      // 2️⃣ Frontend weighted calculation
-      else {
-        wellness = calculateRealWellnessScore(habitsData, analyticsData);
-      }
-
-      setWellnessScore(wellness);
+      const score = calculateWellnessScore(habitsData, analyticsData);
+      setWellnessScore(score);
       
     } catch (error) {
-      console.error("Dashboard load error:", error);
+      console.error("Dashboard error:", error);
       setWellnessScore(0);
     } finally {
       setLoading(false);
     }
-  }, [getToken, calculateRealWellnessScore]);
+  }, [getToken, calculateWellnessScore]);
 
   useEffect(() => {
     if (userId) {
       loadDashboardData();
-      // Refresh every 30s for real-time updates
       const interval = setInterval(loadDashboardData, 30000);
       return () => clearInterval(interval);
     }
   }, [userId, loadDashboardData]);
 
-  // ✅ LOG HABIT → RECALCULATE INSTANTLY
+  // ✅ LOG HABIT
   const handleLogHabit = async (habitId, habitTitle) => {
     try {
       const token = await getToken();
       setAuthToken(token);
       await api.post(`/api/habits/${habitId}/log`);
-      toast.success(`✅ ${habitTitle} logged! Wellness updated!`);
-      loadDashboardData(); // ✅ Recalculates instantly
+      toast.success(`✅ ${habitTitle} logged!`);
+      loadDashboardData(); // Recalculate
     } catch (error) {
       if (error.response?.status === 409) {
         toast.info("Already logged today! ✨");
       } else {
-        toast.error("Failed to log habit");
+        toast.error("Failed to log");
       }
-    }
-  };
-
-  // ✅ SMART REMINDERS - Low score detection
-  const sendSmartReminder = async () => {
-    if (habits.length === 0) {
-      toast.info("Create habits first! 🎯");
-      return;
-    }
-
-    setLoadingReminder(true);
-    try {
-      const token = await getToken();
-      setAuthToken(token);
-      
-      const message = wellnessScore < 50 
-        ? `🚨 Wellness Alert: ${wellnessScore}% - Log your habits to boost your score!`
-        : `💪 Daily reminder: Keep your ${habits.length} habits on track!`;
-      
-      await api.post('/api/reminders/send', {
-        habits: habits.slice(0, 3).map(h => ({ title: h.title, category: h.category })),
-        wellness_score: wellnessScore,
-        message
-      });
-      
-      toast.success(`📧 ${wellnessScore < 50 ? '🚨 Low score boost' : 'Daily'} reminder sent!`);
-    } catch (error) {
-      toast.error("Reminder failed - check console");
-    } finally {
-      setLoadingReminder(false);
     }
   };
 
   if (loading) {
     return (
-      <motion.div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
-        <div className="flex flex-col items-center space-y-4">
+      <motion.div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="text-center">
           <motion.div 
             animate={{ rotate: 360 }} 
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full" 
+            className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full mx-auto mb-4" 
           />
-          <p className="text-muted-foreground">Calculating wellness score...</p>
+          <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </motion.div>
     );
@@ -224,57 +120,21 @@ export default function Dashboard() {
     <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
-      className="min-h-screen bg-gradient-to-br from-background via-background/80 to-muted/20 p-6"
-      data-testid="dashboard"
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 sm:p-6 lg:p-8"
     >
-      {/* 🚨 LOW SCORE ALERT */}
-      <AnimatePresence>
-        {showLowScoreAlert && (
-          <motion.div
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
-            className="fixed top-4 right-4 z-50 max-w-sm"
-          >
-            <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-2xl border-0 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 mt-0.5 flex-shrink-0 animate-pulse" />
-                  <div>
-                    <h4 className="font-bold text-lg mb-1">⚠️ Wellness Dropping!</h4>
-                    <p className="text-sm opacity-90">
-                      Your score is <span className="font-black">{wellnessScore}%</span>. 
-                      Log habits to boost it back up!
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* ✨ HEADER */}
+        
+        {/* ✨ HEADER - CLEAN */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6"
         >
           <div>
-            <motion.h1 
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              className="font-serif font-light text-5xl lg:text-6xl tracking-tight mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent"
-            >
+            <h1 className="font-serif font-light text-5xl lg:text-6xl tracking-tight bg-gradient-to-r from-gray-900 to-emerald-600 bg-clip-text text-transparent mb-2">
               Wellness Dashboard
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-xl text-muted-foreground"
-            >
+            </h1>
+            <p className="text-xl text-gray-600">
               Your Score: 
               <span className={`font-black text-3xl ml-2 ${
                 wellnessScore >= 80 ? 'text-emerald-500' : 
@@ -284,60 +144,35 @@ export default function Dashboard() {
               }`}>
                 {wellnessScore}%
               </span>
-              {habits.length === 0 && (
-                <span className="text-sm font-normal ml-2 text-orange-500">(No habits = 0%)</span>
-              )}
-            </motion.p>
+            </p>
           </div>
           
-          <motion.div
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            className="flex gap-3 flex-wrap"
+          {/* ✅ ONLY NEW HABIT BUTTON */}
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            className="h-14 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 shadow-xl text-lg font-semibold"
           >
-            <Button
-              onClick={() => setShowCreateDialog(true)}
-              className="h-14 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 shadow-xl"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              New Habit
-            </Button>
-            
-            <Button
-              onClick={sendSmartReminder}
-              disabled={loadingReminder || habits.length === 0}
-              className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 shadow-xl"
-            >
-              <motion.div 
-                animate={loadingReminder ? { rotate: 360 } : {}}
-                className="flex items-center gap-2"
-              >
-                {loadingReminder ? (
-                  <Loader2 className="w-5 h-5" />
-                ) : (
-                  <Bell className="w-5 h-5" />
-                )}
-                {wellnessScore < 50 ? 'Boost Score!' : 'Smart Reminder'}
-              </motion.div>
-            </Button>
-          </motion.div>
+            <Plus className="w-5 h-5 mr-2" />
+            New Habit
+          </Button>
         </motion.div>
 
-        {/* 📊 BENTO GRID */}
+        {/* 📊 MAIN BENTO GRID */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          className="grid grid-cols-1 lg:grid-cols-4 gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ staggerChildren: 0.1 }}
         >
+          
           {/* 🌀 MAIN WELLNESS CARD */}
           <motion.div
-            initial={{ y: 50, opacity: 0, scale: 0.9 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
             whileHover={{ y: -8 }}
             className="lg:col-span-2 xl:col-span-2 h-72"
           >
-            <Card className="h-full bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border-0 shadow-2xl overflow-hidden group">
+            <Card className="h-full bg-gradient-to-br from-white to-emerald-50/50 backdrop-blur-sm shadow-2xl border-0 overflow-hidden group hover:shadow-3xl">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3">
                   <motion.div
@@ -345,31 +180,28 @@ export default function Dashboard() {
                     transition={{ duration: 20, repeat: Infinity }}
                     className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center shadow-2xl"
                   >
-                    <TrendingUp className="w-7 h-7 text-background" />
+                    <TrendingUp className="w-7 h-7 text-white" />
                   </motion.div>
                   <div>
-                    <h3 className="text-2xl font-bold text-foreground">Wellness Score</h3>
-                    <p className="text-muted-foreground text-sm">Real-time calculation</p>
+                    <h3 className="text-2xl font-bold text-gray-900">Wellness Score</h3>
+                    <p className="text-sm text-gray-600">Real-time calculation</p>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-8">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="text-center"
-                >
+                <div className="text-center">
+                  {/* ✅ CLEAN SCORE DISPLAY */}
                   <motion.div
                     key={wellnessScore}
                     initial={{ scale: 0.7 }}
                     animate={{ scale: 1 }}
-                    className="text-6xl font-black bg-gradient-to-r from-emerald-500 via-green-500 to-primary bg-clip-text text-transparent mb-6"
+                    className="text-6xl font-black bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 bg-clip-text text-transparent mb-6"
                   >
                     {wellnessScore}
                     <span className="text-3xl">%</span>
                   </motion.div>
                   
-                  <div className="w-full bg-muted/50 rounded-full h-4 mb-6 overflow-hidden">
+                  <div className="w-full bg-gray-200 rounded-full h-4 mb-6 overflow-hidden">
                     <motion.div 
                       className="h-full bg-gradient-to-r from-emerald-500 to-green-600 rounded-full shadow-lg"
                       initial={{ width: 0 }}
@@ -378,81 +210,162 @@ export default function Dashboard() {
                     />
                   </div>
 
-                  <motion.p 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-xl font-semibold text-foreground/80"
-                  >
+                  {/* ✅ CLEAN STATUS TEXT */}
+                  <p className="text-xl font-semibold text-gray-800 mb-4">
                     {habits.length === 0 
-                      ? "🚫 No habits tracked" 
-                      : wellnessScore >= 80 ? "🏆 Peak Performance" : 
-                        wellnessScore >= 60 ? "👍 Excellent" : 
-                        wellnessScore >= 40 ? "⚡ Good Progress" :
-                        wellnessScore >= 20 ? "💪 Keep Going" : "🚀 Start Strong"
+                      ? "Create your first habit to start tracking!" 
+                      : `${habits.length} habits • ${wellnessScore}% complete`
                     }
-                  </motion.p>
+                  </p>
                   
-                  {/* ✅ CATEGORY BREAKDOWN */}
-                  {Object.keys(categoryStats).length > 0 && (
-                    <div className="mt-6 grid grid-cols-3 gap-2 text-xs">
-                      {Object.entries(categoryStats).slice(0, 3).map(([cat, stats]) => (
-                        <div key={cat} className="text-center p-2 bg-muted/30 rounded-lg">
-                          <div className="font-bold text-primary capitalize">{cat}</div>
-                          <div className="text-2xs text-muted-foreground">
-                            {stats.total > 0 ? Math.round((stats.completed/stats.total)*100) : 0}%
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  {/* ✅ START BUTTON IF NO HABITS */}
+                  {habits.length === 0 && (
+                    <motion.div whileHover={{ scale: 1.02 }}>
+                      <Button 
+                        onClick={() => setShowCreateDialog(true)}
+                        className="h-14 px-12 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 text-lg font-semibold"
+                      >
+                        <Plus className="w-5 h-5 mr-2" />
+                        Create First Habit
+                      </Button>
+                    </motion.div>
                   )}
-                </motion.div>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Today's Habits - SHORTENED */}
-          <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="col-span-full h-80">
-            <Card className="h-full shadow-2xl border-0 overflow-hidden">
-              <CardHeader>
+          {/* 📈 QUICK STATS */}
+          <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="lg:col-span-1 h-72">
+            <Card className="h-full shadow-2xl border-0 bg-gradient-to-br from-white to-emerald-50/30 backdrop-blur-sm hover:shadow-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <Activity className="w-6 h-6 text-emerald-600" />
+                  Quick Stats
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-medium">Total Habits</span>
+                    <span className="text-2xl font-bold text-gray-900">{habits.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-medium">Today Complete</span>
+                    <span className={`text-2xl font-bold ${
+                      wellnessScore >= 80 ? 'text-emerald-600' : 
+                      wellnessScore >= 50 ? 'text-green-600' : 'text-orange-600'
+                    }`}>
+                      {Math.round(wellnessScore)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full"
+                      style={{ width: `${wellnessScore}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* 🎯 TODAY'S HABITS - CLEAN */}
+          <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="lg:col-span-1 h-72">
+            <Card className="h-full shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-white to-emerald-50/50 hover:shadow-3xl">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3">
-                  <Target className="w-6 h-6 text-primary" />
-                  Today's Habits ({habits.length})
+                  <Target className="w-6 h-6 text-emerald-600" />
+                  Today's Habits
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 max-h-64 overflow-y-auto space-y-3">
-                {habits.slice(0, 5).map((habit, idx) => (
-                  <motion.div
-                    key={habit.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    whileHover={{ scale: 1.02 }}
-                    className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-muted/50 to-muted hover:from-primary/10 border hover:border-primary/30"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-lg truncate">{habit.title}</h4>
-                      <p className="text-sm text-muted-foreground capitalize">{habit.category}</p>
-                    </div>
-                    <Button
-                      onClick={() => handleLogHabit(habit.id, habit.title)}
-                      size="sm"
-                      className="ml-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600"
+                {habits.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center py-8">
+                    <div className="text-4xl mb-4 opacity-40">🎯</div>
+                    <h3 className="text-xl font-bold text-gray-700 mb-2">No habits yet</h3>
+                    <p className="text-gray-500 mb-6">Start tracking your wellness journey</p>
+                    <Button 
+                      className="h-12 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 shadow-xl"
+                      onClick={() => setShowCreateDialog(true)}
                     >
-                      Log Today
+                      Create Habit
                     </Button>
-                  </motion.div>
-                ))}
-                {habits.length === 0 && (
-                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} 
-                    className="h-64 flex flex-col items-center justify-center text-center text-muted-foreground">
-                    <div className="text-6xl mb-6 opacity-40">🎯</div>
-                    <h3 className="text-2xl font-bold mb-2">No habits yet</h3>
-                    <Button className="rounded-2xl">Create First Habit</Button>
-                  </motion.div>
+                  </div>
+                ) : (
+                  habits.slice(0, 6).map((habit) => (
+                    <motion.div
+                      key={habit.id}
+                      whileHover={{ scale: 1.02 }}
+                      className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-gray-50 to-emerald-50/30 border border-emerald-100 hover:border-emerald-200 hover:shadow-md transition-all"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-lg text-gray-900 truncate">{habit.title}</h4>
+                        <p className="text-sm text-gray-600 capitalize">{habit.category}</p>
+                      </div>
+                      <Button
+                        onClick={() => handleLogHabit(habit.id, habit.title)}
+                        size="sm"
+                        className="ml-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 shadow-lg h-10 px-4 rounded-xl"
+                      >
+                        Log Today
+                      </Button>
+                    </motion.div>
+                  ))
                 )}
               </CardContent>
             </Card>
           </motion.div>
         </motion.div>
+
+        {/* ✅ CREATE HABIT DIALOG - SIMPLE */}
+        <AnimatePresence>
+          {showCreateDialog && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+              >
+                <div className="p-8">
+                  <h2 className="text-3xl font-serif font-light bg-gradient-to-r from-gray-900 to-emerald-600 bg-clip-text text-transparent mb-6 text-center">
+                    New Habit
+                  </h2>
+                  <div className="space-y-4">
+                    <input 
+                      placeholder="Habit name (e.g. Drink water)" 
+                      className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all"
+                    />
+                    <select className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all">
+                      <option>fitness</option>
+                      <option>hydration</option>
+                      <option>sleep</option>
+                      <option>mindfulness</option>
+                    </select>
+                    <div className="flex gap-3 pt-2">
+                      <Button className="flex-1 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 shadow-xl font-semibold text-lg">
+                        Create Habit
+                      </Button>
+                      <Button 
+                        onClick={() => setShowCreateDialog(false)}
+                        variant="outline"
+                        className="h-14 px-8 rounded-2xl border-2 border-gray-300 hover:bg-gray-50 font-semibold text-lg"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
