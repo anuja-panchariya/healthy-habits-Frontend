@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  TrendingUp, Activity, Target, Flame, Plus, Bell, Clock, CheckCircle, Zap 
+  TrendingUp, Activity, Target, Flame, Plus, Bell, Clock, CheckCircle, Zap, AlertTriangle 
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -25,10 +25,50 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [loadingReminder, setLoadingReminder] = useState(false);
+  const [showLowScoreAlert, setShowLowScoreAlert] = useState(false);
 
-  // 🚀 PERFECT WELLNESS CALCULATION: 1/2 = 50%, 2/2 = 100%
+  // 🎯 REAL WELLNESS - Category weighted (delete habit = score drops!)
+  const calculateRealWellness = useCallback((habitsData, analyticsData) => {
+    if (!habitsData?.length) return 0;
+
+    const categoryStats = {};
+    habitsData.forEach(habit => {
+      const cat = habit.category?.toLowerCase() || 'general';
+      categoryStats[cat] = categoryStats[cat] || { total: 0, completed: 0 };
+      categoryStats[cat].total += 1;
+      
+      // Check completion
+      const isCompleted = analyticsData.todayLogs?.includes?.(habit.id) || 
+                         habit.loggedToday || 
+                         (analyticsData[`habit_${habit.id}`] === 'completed');
+      if (isCompleted) categoryStats[cat].completed += 1;
+    });
+
+    // Weighted calculation
+    let totalScore = 0;
+    let totalHabits = habitsData.length;
+    let completedHabits = 0;
+
+    Object.values(categoryStats).forEach(stats => {
+      if (stats.total > 0) {
+        completedHabits += stats.completed;
+      }
+    });
+
+    const score = totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0;
+    
+    // Low score alert
+    if (score < 50 && !showLowScoreAlert) {
+      setShowLowScoreAlert(true);
+      setTimeout(() => setShowLowScoreAlert(false), 8000);
+    }
+
+    return score;
+  }, []);
+
   const loadData = useCallback(async () => {
     try {
+      setLoading(true);
       const token = await getToken();
       setAuthToken(token);
 
@@ -38,55 +78,30 @@ export default function Dashboard() {
         api.get("/api/habits/wellness-score")
       ]);
 
-      // ✅ STEP 1: Get real habits
-      const habitsData = habitsRes.status === "fulfilled" 
-        ? (habitsRes.value.habits || habitsRes.value.data || []) 
-        : [];
+      const habitsData = habitsRes.status === "fulfilled" ? 
+        (habitsRes.value.habits || habitsRes.value.data || []) : [];
       
-      // ✅ STEP 2: Get real analytics  
       const analyticsData = analyticsRes.status === "fulfilled" ? analyticsRes.value : {};
-      
-      // ✅ STEP 3: Get backend wellness (if available)
       const wellnessData = wellnessRes.status === "fulfilled" ? wellnessRes.value : {};
 
       setHabits(habitsData);
       setAnalytics(analyticsData);
 
-      // 🎯 PERFECT CALCULATION LOGIC:
       let wellness = 0;
-
-      // CASE 1: No habits = 0%
-      if (habitsData.length === 0) {
-        wellness = 0;
+      if (wellnessData?.score) {
+        wellness = parseFloat(wellnessData.score);
+      } else {
+        wellness = calculateRealWellness(habitsData, analyticsData);
       }
-      // CASE 2: Backend provides exact score (highest priority)
-      else if (wellnessData.score !== undefined && !isNaN(wellnessData.score)) {
-        wellness = Math.max(0, Math.min(100, parseFloat(wellnessData.score)));
-      }
-      // CASE 3: ✅ EXACT: (todayLogs / totalHabits) * 100
-      else if (analyticsData.todayLogs !== undefined && habitsData.length > 0) {
-        const exactPercentage = (analyticsData.todayLogs / habitsData.length) * 100;
-        wellness = Math.round(exactPercentage * 10) / 10; // 1 decimal precision
-      }
-
-      // 🔍 DEBUG CONSOLE (remove in production)
-      console.log('🔢 WELLNESS DEBUG:', {
-        totalHabits: habitsData.length,
-        todayLogs: analyticsData.todayLogs || 0,
-        backendScore: wellnessData.score,
-        calculated: wellness + '%'
-      });
 
       setWellnessScore(wellness);
-
     } catch (error) {
       console.error("Dashboard error:", error);
       setWellnessScore(0);
-      setHabits([]);
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [getToken, calculateRealWellness]);
 
   useEffect(() => {
     if (userId) loadData();
@@ -98,7 +113,7 @@ export default function Dashboard() {
       setAuthToken(token);
       await api.post(`/api/habits/${habitId}/log`);
       toast.success(`✅ ${habitTitle} logged!`);
-      loadData(); // ✅ Recalculates wellness instantly!
+      loadData();
     } catch (error) {
       if (error.response?.status === 409) {
         toast.info("Already logged today! ✨");
@@ -108,26 +123,20 @@ export default function Dashboard() {
     }
   };
 
-  const sendDailyReminder = async () => {
+  const sendSmartReminder = async () => {
     if (habits.length === 0) {
-      toast.info("Create habits first! 🎯");
+      toast.info("Create habits first!");
       return;
     }
-
     setLoadingReminder(true);
     try {
       const token = await getToken();
       setAuthToken(token);
-      
       await api.post('/api/reminders/send', {
-        email: "user@example.com",
-        habits: habits.slice(0, 5).map(habit => ({
-          title: habit.title,
-          category: habit.category || 'General'
-        }))
+        habits: habits.slice(0, 5).map(h => ({ title: h.title, category: h.category })),
+        wellness_score: wellnessScore
       });
-      
-      toast.success(`📧 ${habits.length} habit reminder sent!`);
+      toast.success(`📧 Reminder sent! ${wellnessScore < 50 ? '(Boost needed!)' : ''}`);
     } catch (error) {
       toast.error("Reminder failed");
     } finally {
@@ -137,17 +146,10 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30"
-      >
+      <motion.div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
         <div className="flex flex-col items-center space-y-4">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full"
-          />
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }} 
+            className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full" />
           <p className="text-muted-foreground">Loading dashboard...</p>
         </div>
       </motion.div>
@@ -157,103 +159,78 @@ export default function Dashboard() {
   const todayHabits = habits.slice(0, 5);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
       className="min-h-screen bg-gradient-to-br from-background via-background/80 to-muted/20 p-6"
-      data-testid="dashboard"
-    >
+      data-testid="dashboard">
+      
+      {/* LOW SCORE ALERT */}
+      <AnimatePresence>
+        {showLowScoreAlert && (
+          <motion.div initial={{ y: -100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: -100, opacity: 0 }} className="fixed top-4 right-4 z-50 max-w-sm">
+            <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-2xl border-0">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-bold text-lg mb-1">⚠️ Wellness Alert</h4>
+                    <p className="text-sm opacity-90">Score {wellnessScore}% - Log habits to boost!</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* ✨ HEADER */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6"
-        >
+        <motion.div initial={{ y: -20 }} animate={{ y: 0 }} 
+          className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          
           <div>
-            <motion.h1 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="font-serif font-light text-5xl lg:text-6xl tracking-tight mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent"
-            >
+            <motion.h1 initial={{ scale: 0.9 }} animate={{ scale: 1 }} 
+              className="font-serif font-light text-5xl lg:text-6xl tracking-tight mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
               Dashboard
             </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-xl text-muted-foreground/80"
-            >
-              Wellness Score: <span className="font-bold text-2xl text-primary">{wellnessScore}%</span>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} 
+              className="text-xl text-muted-foreground/80">
+              Wellness Score: <span className={`font-bold text-2xl text-primary ml-2 ${wellnessScore < 50 ? 'text-orange-500' : ''}`}>
+                {wellnessScore}%
+              </span>
             </motion.p>
           </div>
           
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex gap-3 flex-wrap"
-          >
-            <Button
-              onClick={() => setShowCreateDialog(true)}
-              className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 shadow-lg hover:shadow-xl h-12 px-8 group"
-            >
-              <motion.div 
-                className="flex items-center gap-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+          <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.3 }} 
+            className="flex gap-3 flex-wrap">
+            <Button onClick={() => setShowCreateDialog(true)} 
+              className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 shadow-lg h-12 px-8">
+              <motion.div className="flex items-center gap-2" whileHover={{ scale: 1.05 }}>
                 <Plus className="w-5 h-5" />
                 <span>New Habit</span>
               </motion.div>
             </Button>
-            
-            <Button
-              onClick={sendDailyReminder}
-              disabled={loadingReminder || habits.length === 0}
-              className="rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl h-12 px-8 relative overflow-hidden"
-            >
-              <motion.div 
-                animate={loadingReminder ? { rotate: 360 } : {}}
-                transition={{ duration: 1, repeat: Infinity }}
-                className="flex items-center gap-2"
-              >
-                {loadingReminder ? (
-                  <Loader2 className="w-5 h-5" />
-                ) : (
-                  <Bell className="w-5 h-5" />
-                )}
+            <Button onClick={sendSmartReminder} disabled={loadingReminder || !habits.length}
+              className="rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 shadow-lg h-12 px-8">
+              <motion.div animate={loadingReminder ? { rotate: 360 } : {}} className="flex items-center gap-2">
+                {loadingReminder ? <Loader2 className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
                 <span>Reminder</span>
               </motion.div>
             </Button>
           </motion.div>
         </motion.div>
 
-        {/* 🔥 BENTO GRID */}
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ staggerChildren: 0.1 }}
-        >
+        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ staggerChildren: 0.1 }}>
           
-          {/* 🌀 WELLNESS SCORE */}
-          <motion.div
-            initial={{ y: 50, opacity: 0, scale: 0.9 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            whileHover={{ y: -8, scale: 1.02 }}
-            className="lg:col-span-2 xl:col-span-2 h-64"
-          >
+          {/* WELLNESS CARD */}
+          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} 
+            whileHover={{ y: -8, scale: 1.02 }} className="lg:col-span-2 xl:col-span-2 h-64">
             <Card className="h-full bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border-0 shadow-2xl overflow-hidden group">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3">
-                  <motion.div
-                    animate={{ rotate: [0, 5, -5, 0] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className="w-12 h-12 bg-gradient-to-r from-primary to-primary/70 rounded-2xl flex items-center justify-center shadow-lg"
-                  >
+                  <motion.div animate={{ rotate: [0, 5, -5, 0] }} 
+                    transition={{ duration: 3, repeat: Infinity }} 
+                    className="w-12 h-12 bg-gradient-to-r from-primary to-primary/70 rounded-2xl flex items-center justify-center shadow-lg">
                     <TrendingUp className="w-6 h-6 text-background" />
                   </motion.div>
                   <div>
@@ -263,26 +240,13 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5, type: "spring" }}
-                  className="text-center"
-                >
-                  <motion.div
-                    key={wellnessScore}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-5xl font-black bg-gradient-to-r from-primary via-blue-600 to-emerald-500 bg-clip-text text-transparent mb-4"
-                  >
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 }} className="text-center">
+                  <motion.div key={wellnessScore} initial={{ scale: 0.8 }} animate={{ scale: 1 }} 
+                    className="text-5xl font-black bg-gradient-to-r from-primary via-blue-600 to-emerald-500 bg-clip-text text-transparent mb-4">
                     {wellnessScore}%
                   </motion.div>
                   <Progress value={wellnessScore} className="h-4" indicatorClassName="bg-gradient-to-r from-emerald-500 to-green-600" />
-                  <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-4 text-lg font-semibold"
-                  >
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-lg font-semibold">
                     {wellnessScore >= 80 ? "🏆 Excellent!" : wellnessScore >= 50 ? "👍 Great!" : wellnessScore > 0 ? "💪 Keep going!" : "No habits yet"}
                   </motion.p>
                 </motion.div>
@@ -290,14 +254,9 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 📊 QUICK STATS */}
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            whileHover={{ y: -4 }}
-            className="h-48 group"
-          >
-            <Card className="h-full bg-gradient-to-b from-muted/50 to-transparent backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-xl">
+          {/* QUICK STATS */}
+          <motion.div initial={{ y: 50 }} animate={{ y: 0 }} whileHover={{ y: -4 }} className="h-48 group">
+            <Card className="h-full bg-gradient-to-b from-muted/50 to-transparent backdrop-blur-sm border-border/50 hover:border-primary/50 shadow-lg hover:shadow-xl">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Activity className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
@@ -305,59 +264,38 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                <motion.div 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex justify-between items-center p-3 bg-muted/50 rounded-xl group-hover:bg-muted/70 transition-all"
-                >
-                  <span className="text-muted-foreground">Total Habits</span>
-                  <motion.span 
-                    className="font-bold text-xl text-primary"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} 
+                  className="flex justify-between items-center p-3 bg-muted/50 rounded-xl group-hover:bg-muted/70">
+                  <span className="text-muted-foreground">Habits</span>
+                  <motion.span className="font-bold text-xl text-primary" animate={{ scale: [1, 1.1, 1] }}>
                     {habits.length}
                   </motion.span>
                 </motion.div>
-                <motion.div 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="flex justify-between items-center p-3 bg-muted/50 rounded-xl group-hover:bg-muted/70 transition-all"
-                >
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} 
+                  className="flex justify-between items-center p-3 bg-muted/50 rounded-xl group-hover:bg-muted/70">
                   <span className="text-muted-foreground">Today's Logs</span>
-                  <span className="font-bold text-xl text-emerald-500">
-                    {analytics?.todayLogs || 0}
-                  </span>
+                  <span className="font-bold text-xl text-emerald-500">{analytics?.todayLogs || 0}</span>
                 </motion.div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 🔔 REMINDERS */}
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            whileHover={{ y: -4, scale: 1.02 }}
-            className="h-48"
-          >
-            <Card className="h-full bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border-blue-200/50 hover:border-blue-300 shadow-lg hover:shadow-xl backdrop-blur-sm overflow-hidden">
+          {/* REMINDERS */}
+          <motion.div initial={{ y: 50 }} animate={{ y: 0 }} whileHover={{ y: -4 }} className="h-48">
+            <Card className="h-full bg-gradient-to-b from-muted/50 to-transparent backdrop-blur-sm border-border/50 hover:border-primary/50 shadow-lg hover:shadow-xl">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-blue-600 animate-pulse" />
-                  Daily Reminders
+                  Smart Reminders
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-2">
                 <p className="text-xs text-muted-foreground text-center">
-                  Send beautiful habit reminder emails
+                  {wellnessScore < 50 ? "🚨 Low score detected!" : "Daily habit reminder"}
                 </p>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    onClick={sendDailyReminder}
-                    disabled={loadingReminder || habits.length === 0}
-                    className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg"
-                  >
+                <motion.div whileHover={{ scale: 1.02 }}>
+                  <Button onClick={sendSmartReminder} disabled={loadingReminder || !habits.length}
+                    className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 shadow-lg">
                     {loadingReminder ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -366,24 +304,18 @@ export default function Dashboard() {
                     ) : (
                       <>
                         <Zap className="w-4 h-4 mr-2" />
-                        Send Now
+                        {wellnessScore < 50 ? 'Boost Score!' : 'Send Now'}
                       </>
                     )}
                   </Button>
                 </motion.div>
-                <p className="text-xs text-center text-muted-foreground">
-                  {habits.length} habit{habits.length !== 1 ? 's' : ''}
-                </p>
+                <p className="text-xs text-center text-muted-foreground">{habits.length} habit{habits.length !== 1 ? 's' : ''}</p>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 🎯 TODAY'S HABITS */}
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="col-span-full lg:col-span-4 xl:col-span-5 h-80"
-          >
+          {/* HABITS LIST */}
+          <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="col-span-full lg:col-span-4 xl:col-span-5 h-80">
             <Card className="h-full shadow-2xl border-0 overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
@@ -394,54 +326,31 @@ export default function Dashboard() {
               <CardContent className="p-0">
                 <AnimatePresence>
                   {todayHabits.length === 0 ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="h-64 flex flex-col items-center justify-center text-center p-12"
-                    >
-                      <motion.div 
-                        animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="text-6xl mb-6 opacity-40"
-                      >
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} 
+                      className="h-64 flex flex-col items-center justify-center text-center p-12">
+                      <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} 
+                        transition={{ duration: 2, repeat: Infinity }} className="text-6xl mb-6 opacity-40">
                         🎯
                       </motion.div>
                       <h3 className="text-2xl font-bold mb-2 text-muted-foreground/80">No habits yet</h3>
                       <p className="text-muted-foreground mb-6">Click "New Habit" to get started!</p>
                     </motion.div>
                   ) : (
-                    <motion.div
-                      className="space-y-3 p-6 max-h-64 overflow-y-auto"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
+                    <motion.div className="space-y-3 p-6 max-h-64 overflow-y-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       {todayHabits.map((habit, index) => (
-                        <motion.div
-                          key={habit.id}
-                          initial={{ opacity: 0, x: -50, y: 20 }}
-                          animate={{ opacity: 1, x: 0, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          whileHover={{ scale: 1.02, x: 5 }}
-                          className="group flex items-center justify-between p-5 rounded-2xl bg-gradient-to-r from-muted/50 to-muted hover:from-primary/5 hover:shadow-xl border border-border/50 hover:border-primary/30 transition-all duration-300 cursor-pointer"
-                        >
+                        <motion.div key={habit.id} initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} 
+                          transition={{ delay: index * 0.05 }} whileHover={{ scale: 1.02 }}
+                          className="group flex items-center justify-between p-5 rounded-2xl bg-gradient-to-r from-muted/50 to-muted hover:from-primary/5 border border-border/50 hover:border-primary/30">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-lg group-hover:text-primary truncate">
-                              {habit.title}
-                            </h4>
+                            <h4 className="font-semibold text-lg group-hover:text-primary truncate">{habit.title}</h4>
                             <p className="text-sm text-muted-foreground capitalize flex items-center gap-1">
                               <CheckCircle className="w-3 h-3 opacity-70" />
                               {habit.category || "General"}
                             </p>
                           </div>
                           <motion.div whileTap={{ scale: 0.95 }}>
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleLogHabit(habit.id, habit.title);
-                              }}
-                              size="sm"
-                              className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-lg ml-4 px-6 h-10 font-semibold"
-                            >
+                            <Button onClick={(e) => { e.stopPropagation(); handleLogHabit(habit.id, habit.title); }} 
+                              size="sm" className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 ml-4 px-6 h-10">
                               Log Today
                             </Button>
                           </motion.div>
@@ -456,20 +365,11 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* ✨ CREATE HABIT DIALOG */}
       <AnimatePresence>
         {showCreateDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <CreateHabitDialog
-              open={showCreateDialog}
-              onClose={() => setShowCreateDialog(false)}
-              onSuccess={loadData}
-            />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <CreateHabitDialog open={showCreateDialog} onClose={() => setShowCreateDialog(false)} onSuccess={loadData} />
           </motion.div>
         )}
       </AnimatePresence>
