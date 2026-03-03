@@ -31,7 +31,8 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="healthyhabits-theme">
       <Provider store={store}>
-        <BrowserRouter>
+        {/* ✅ THIS ONE LINE FIXES /index.html ERROR */}
+        <BrowserRouter basename="/">
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route
