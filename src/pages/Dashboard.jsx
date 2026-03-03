@@ -310,7 +310,7 @@ export default function Dashboard() {
             whileHover={{ y: -4, scale: 1.02 }}
             className="h-48"
           >
-            <Card className="h-full bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border-blue-200/50 hover:border-blue-300 shadow-lg hover:shadow-xl backdrop-blur-sm overflow-hidden">
+            <Card className="h-full bg-gradient-to-b from-muted/50 to-transparent backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-xl">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-blue-600 animate-pulse" />
