@@ -31,7 +31,6 @@ export default function ProfilePage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [moodStats, setMoodStats] = useState({ total: 0, greatPercentage: 0 })
 
-  // 🎯 LOAD ALL REAL DATA
   const loadProfileData = useCallback(async () => {
     if (!isSignedIn) return
     
@@ -72,7 +71,6 @@ export default function ProfilePage() {
     loadProfileData()
   }, [loadProfileData])
 
-  // ✅ MOOD LOGGING
   const logMood = async () => {
     if (!mood) {
       toast.error('Please select a mood! 😊')
@@ -93,7 +91,6 @@ export default function ProfilePage() {
     }
   }
 
-  // ✅ AI RECOMMENDATIONS
   const getAIRecommendations = async () => {
     setLoadingAI(true)
     try {
@@ -119,7 +116,6 @@ export default function ProfilePage() {
     localStorage.setItem('habit-reminders-enabled', checked.toString())
   }
 
-  // ✅ EXPORTS
   const exportPDF = async () => {
     setExportingPDF(true)
     try {
@@ -170,8 +166,11 @@ export default function ProfilePage() {
   if (loadingMoods) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }} 
-          className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full" />
+        <motion.div 
+          animate={{ rotate: 360 }} 
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full mx-auto" 
+        />
       </div>
     )
   }
@@ -184,8 +183,12 @@ export default function ProfilePage() {
     >
       <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-8 lg:space-y-12">
         
-        {/* ✨ HEADER - YOUR ORIGINAL STYLE */}
-        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-12 lg:mb-16">
+        {/* ✨ HEADER */}
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }} 
+          className="text-center mb-12 lg:mb-16"
+        >
           <motion.div 
             animate={{ scale: [1, 1.1, 1] }} 
             transition={{ duration: 3, repeat: Infinity }} 
@@ -204,7 +207,7 @@ export default function ProfilePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           
-          {/* 👤 ACCOUNT CARD - REAL CLERK DATA */}
+          {/* 👤 ACCOUNT CARD */}
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="h-full bg-gradient-to-br from-white to-emerald-50/50 backdrop-blur-sm shadow-2xl border-0 hover:shadow-3xl">
               <CardHeader className="pb-6">
@@ -253,14 +256,6 @@ export default function ProfilePage() {
                     onCheckedChange={toggleNotifications}
                   />
                 </div>
-                
-                <Button 
-                  className="w-full h-14 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 font-semibold text-lg" 
-                  disabled={!habits.length}
-                >
-                  <Clock className="w-5 h-5 mr-2" />
-                  Schedule Reminder
-                </Button>
               </CardContent>
             </Card>
           </motion.div>
@@ -295,193 +290,176 @@ export default function ProfilePage() {
                   </Button>
                 </motion.div>
 
-                <AnimatePresence>
-                  {recommendations.length > 0 && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="space-y-3 max-h-80 overflow-y-auto rounded-3xl p-6 bg-gradient-to-r from-purple-50 to-pink-50/50 border border-purple-200 backdrop-blur-sm"
-                    >
-                      {recommendations.map((rec, idx) => (
-                        <motion.div
-                          key={rec.id || idx}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.1 }}
-                          className="group p-5 rounded-2xl bg-white/70 backdrop-blur-sm shadow-lg hover:shadow-2xl border border-white/50 hover:border-purple-300 transition-all cursor-pointer hover:-translate-y-2"
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="font-bold text-xl lg:text-2xl text-gray-900 group-hover:text-purple-600 truncate">
-                              {rec.title}
-                            </h4>
-                            <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 text-sm px-3 py-1">
-                              {rec.category}
-                            </Badge>
-                          </div>
-                          <p className="text-gray-700 leading-relaxed text-sm lg:text-base">{rec.reason}</p>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* 😊 MOOD TRACKER - FULL WIDTH */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-2">
-            <Card className="shadow-2xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-8">
-                <CardTitle className="flex items-center gap-3 text-3xl">
-                  <Smile className="w-10 h-10" />
-                  Mood Journey
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                
-                {/* 📊 STATS */}
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="text-center p-8 bg-gradient-to-br from-emerald-50 to-green-50/50 rounded-3xl">
-                    <div className="text-5xl mb-4 mx-auto">😄</div>
-                    <div className="text-4xl font-black text-emerald-600">{moodStats.greatPercentage}%</div>
-                    <p className="text-lg text-gray-600 mt-2 font-semibold">Great Days</p>
+                {recommendations.length > 0 && (
+                  <div className="space-y-3 max-h-80 overflow-y-auto rounded-3xl p-6 bg-gradient-to-r from-purple-50 to-pink-50/50 border border-purple-200 backdrop-blur-sm">
+                    {recommendations.map((rec, idx) => (
+                      <div key={rec.id || idx} className="flex gap-3 p-4 bg-white/70 rounded-2xl border border-purple-100 hover:shadow-md transition-all">
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl flex items-center justify-center flex-shrink-0">
+                          <Zap className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h5 className="font-semibold text-lg text-gray-900 truncate">{rec.title}</h5>
+                          <p className="text-sm text-gray-600 mb-1">{rec.reason}</p>
+                          <Badge className="bg-purple-100 text-purple-800 px-3 py-1">{rec.category}</Badge>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-3xl">
-                    <div className="text-4xl mb-4 mx-auto">📊</div>
-                    <div className="text-4xl font-black text-blue-600">{moodStats.total}</div>
-                    <p className="text-lg text-gray-600 mt-2 font-semibold">Total Logs</p>
-                  </div>
-                  <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-pink-50/50 rounded-3xl">
-                    <Activity className="w-16 h-16 mx-auto mb-4 text-purple-500" />
-                    <div className="text-3xl font-black text-purple-600">{habits.length}</div>
-                    <p className="text-lg text-gray-600 mt-2 font-semibold">Active Habits</p>
-                  </div>
-                </div>
-
-                {/* 🎯 LOG MOOD */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 p-8 bg-gradient-to-r from-slate-50 to-emerald-50/30 backdrop-blur-sm rounded-3xl">
-                  <div className="lg:col-span-2">
-                    <Label className="text-xl font-bold mb-4 block">How are you feeling today?</Label>
-                    <Select value={mood} onValueChange={setMood}>
-                      <SelectTrigger className="h-16 rounded-2xl text-xl border-2">
-                        <SelectValue placeholder="Select mood..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="great">😄 Great</SelectItem>
-                        <SelectItem value="good">🙂 Good</SelectItem>
-                        <SelectItem value="okay">😐 Okay</SelectItem>
-                        <SelectItem value="bad">☹️ Bad</SelectItem>
-                        <SelectItem value="terrible">😢 Terrible</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <Textarea
-                    placeholder="What's on your mind today..."
-                    value={moodNotes}
-                    onChange={(e) => setMoodNotes(e.target.value)}
-                    className="lg:col-span-2 h-28 rounded-2xl resize-none border-2"
-                  />
-                  
-                  <motion.div className="lg:col-span-4" whileHover={{ scale: 1.02 }}>
-                    <Button 
-                      onClick={logMood}
-                      disabled={!mood}
-                      className="w-full h-16 rounded-2xl text-xl shadow-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 font-bold"
-                    >
-                      <Smile className="w-6 h-6 mr-3" />
-                      Log Today's Mood
-                    </Button>
-                  </motion.div>
-                </div>
-
-                {/* 📈 RECENT MOODS */}
-                {moods.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-2xl font-bold flex items-center gap-3 mb-6">
-                      Recent Moods 
-                      <Activity className="w-7 h-7 text-emerald-500" />
-                    </h4>
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {moods.map((moodItem, idx) => (
-                        <motion.div 
-                          key={moodItem.id || idx}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="flex items-center justify-between p-6 rounded-3xl bg-gradient-to-r from-white to-emerald-50/50 backdrop-blur-sm border border-emerald-200 hover:border-emerald-300 group hover:shadow-xl transition-all cursor-pointer"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="text-3xl">{getMoodEmoji(moodItem.mood)}</div>
-                            <div>
-                              <p className="font-bold text-xl capitalize">{moodItem.mood}</p>
-                              <p className="text-gray-600 text-lg">{moodItem.notes || 'No notes'}</p>
-                            </div>
-                          </div>
-                          <span className="text-sm font-semibold text-emerald-600 bg-emerald-100 px-4 py-2 rounded-full">
-                            {new Date(moodItem.date || moodItem.created_at).toLocaleDateString('en-IN')}
-                          </span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
                 )}
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 📤 EXPORTS */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-2">
-            <Card className="shadow-2xl hover:shadow-3xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-2xl lg:text-3xl">
-                  <Download className="w-8 h-8 text-emerald-600" />
-                  Export Data
+          {/* 😊 MOOD TRACKER */}
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="shadow-2xl h-full hover:shadow-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl">
+                  <Smile className="w-7 h-7 text-yellow-500" />
+                  Today's Mood
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid md:grid-cols-2 gap-6 p-8">
-                <motion.div whileHover={{ scale: 1.02 }}>
-                  <Button
-                    onClick={exportCSV}
-                    disabled={exportingCSV}
-                    className="w-full h-16 rounded-2xl shadow-xl flex items-center gap-3 text-xl font-semibold"
-                  >
-                    {exportingCSV ? (
-                      <>
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                        Exporting...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-7 h-7" />
-                        📊 CSV Spreadsheet
-                      </>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <Select value={mood} onValueChange={setMood}>
+                    <SelectTrigger className="h-14 rounded-2xl">
+                      <SelectValue placeholder="How are you feeling today?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="great">😄 Great</SelectItem>
+                      <SelectItem value="good">🙂 Good</SelectItem>
+                      <SelectItem value="okay">😐 Okay</SelectItem>
+                      <SelectItem value="bad">☹️ Bad</SelectItem>
+                      <SelectItem value="terrible">😢 Terrible</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Textarea 
+                    value={moodNotes}
+                    onChange={(e) => setMoodNotes(e.target.value)}
+                    placeholder="What's on your mind today? (optional)"
+                    className="min-h-[100px] rounded-2xl resize-none"
+                  />
+                  
+                  <motion.div whileHover={{ scale: 1.02 }}>
+                    <Button 
+                      onClick={logMood}
+                      disabled={!mood}
+                      className="w-full h-14 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 font-semibold text-lg"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      Log Mood
+                    </Button>
+                  </motion.div>
+                </div>
+
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-semibold text-lg">Recent Moods</h4>
+                    <div className="text-sm text-gray-500">
+                      {moodStats.total} total • {moodStats.greatPercentage}% great
+                    </div>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {moods.slice(0, 5).map((m, idx) => (
+                      <div key={m.id || idx} className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-emerald-50/30 rounded-xl border border-emerald-100">
+                        <div className="text-2xl">{getMoodEmoji(m.mood)}</div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-gray-900 capitalize">{m.mood}</span>
+                          {m.notes && (
+                            <p className="text-sm text-gray-600 truncate">{m.notes}</p>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {new Date(m.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                    {moods.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        No moods logged yet. Be the first! 😊
+                      </div>
                     )}
-                  </Button>
-                </motion.div>
-                
-                <motion.div whileHover={{ scale: 1.02 }}>
-                  <Button
-                    onClick={exportPDF}
-                    disabled={exportingPDF}
-                    className="w-full h-16 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 flex items-center gap-3 text-xl font-semibold text-white"
-                  >
-                    {exportingPDF ? (
-                      <>
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Award className="w-7 h-7" />
-                        📄 Wellness PDF
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         </div>
+
+        {/* 📊 STATS & EXPORTS */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.4 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
+          <Card className="shadow-xl hover:shadow-2xl bg-gradient-to-br from-emerald-50 to-green-50/50">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <Activity className="w-6 h-6 text-emerald-600" />
+                Total Habits
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center p-6">
+              <div className="text-4xl font-black text-emerald-600 mb-2">{habits.length}</div>
+              <p className="text-gray-600">Active habits</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-xl hover:shadow-2xl bg-gradient-to-br from-purple-50 to-pink-50/50">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <Award className="w-6 h-6 text-purple-600" />
+                Mood Logs
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center p-6">
+              <div className="text-4xl font-black text-purple-600 mb-2">{moodStats.total}</div>
+              <p className="text-gray-600">Total entries</p>
+            </CardContent>
+          </Card>
+
+          <motion.div whileHover={{ scale: 1.02 }}>
+            <Button 
+              onClick={exportCSV}
+              disabled={exportingCSV}
+              className="h-20 rounded-2xl shadow-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 text-white font-semibold text-lg col-span-1 md:col-span-1 lg:col-span-1"
+            >
+              {exportingCSV ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5 mr-2" />
+                  Export CSV
+                </>
+              )}
+            </Button>
+          </motion.div>
+
+          <motion.div whileHover={{ scale: 1.02 }}>
+            <Button 
+              onClick={exportPDF}
+              disabled={exportingPDF}
+              className="h-20 rounded-2xl shadow-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 text-white font-semibold text-lg col-span-1 md:col-span-1 lg:col-span-1"
+            >
+              {exportingPDF ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-5 h-5 mr-2" />
+                  Export PDF
+                </>
+              )}
+            </Button>
+          </motion.div>
+        </motion.div>
       </div>
     </motion.div>
   )
