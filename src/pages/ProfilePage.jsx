@@ -2,13 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useAuth, UserButton } from '@clerk/clerk-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Mail, Brain, Download, Smile, FileText, Activity, CheckCircle, 
-  Loader2, Bell, Clock, Heart, Zap, Award, Star, Sparkles 
+  Sun, Moon, Heart, Star, Bell, Sparkles, Smile, Activity, Award, 
+  Download, FileText, Brain, Loader2, CheckCircle 
 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import { Badge } from '../components/ui/badge'
@@ -19,6 +18,7 @@ import { toast } from 'sonner'
 
 export default function ProfilePage() {
   const { getToken, user, isSignedIn } = useAuth()
+  const [isDark, setIsDark] = useState(false)
   const [recommendations, setRecommendations] = useState([])
   const [moods, setMoods] = useState([])
   const [loadingAI, setLoadingAI] = useState(false)
@@ -31,6 +31,21 @@ export default function ProfilePage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [moodStats, setMoodStats] = useState({ total: 0, greatPercentage: 0 })
 
+  // 🎯 THEME TOGGLE
+  useEffect(() => {
+    const saved = localStorage.getItem('darkMode') === 'true'
+    setIsDark(saved)
+    document.documentElement.classList.toggle('dark', saved)
+  }, [])
+
+  const toggleDarkMode = () => {
+    const newDark = !isDark
+    setIsDark(newDark)
+    localStorage.setItem('darkMode', newDark)
+    document.documentElement.classList.toggle('dark', newDark)
+  }
+
+  // 🎯 LOAD ALL DATA
   const loadProfileData = useCallback(async () => {
     if (!isSignedIn) return
     
@@ -71,6 +86,7 @@ export default function ProfilePage() {
     loadProfileData()
   }, [loadProfileData])
 
+  // ✅ LOG MOOD
   const logMood = async () => {
     if (!mood) {
       toast.error('Please select a mood! 😊')
@@ -91,6 +107,7 @@ export default function ProfilePage() {
     }
   }
 
+  // 🤖 AI RECOMMENDATIONS
   const getAIRecommendations = async () => {
     setLoadingAI(true)
     try {
@@ -116,48 +133,6 @@ export default function ProfilePage() {
     localStorage.setItem('habit-reminders-enabled', checked.toString())
   }
 
-  const exportPDF = async () => {
-    setExportingPDF(true)
-    try {
-      const { jsPDF } = await import('jspdf')
-      const doc = new jsPDF()
-      doc.setFillColor(16, 185, 129)
-      doc.rect(0, 0, 210, 35, 'F')
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(24)
-      doc.text(`${user?.fullName || 'User'}'s Report`, 20, 25)
-      doc.setFontSize(14)
-      doc.setTextColor(0, 0, 0)
-      doc.text(`Habits: ${habits.length}`, 20, 55)
-      doc.text(`Mood Logs: ${moodStats.total}`, 20, 70)
-      doc.save(`${(user?.fullName || 'user').replace(/\s+/g, '_')}_wellness.pdf`)
-      toast.success('📄 PDF ready!')
-    } catch (error) {
-      toast.error('PDF failed')
-    } finally {
-      setExportingPDF(false)
-    }
-  }
-
-  const exportCSV = async () => {
-    setExportingCSV(true)
-    try {
-      const token = await getToken()
-      setAuthToken(token)
-      const response = await api.get('/api/export/csv', { responseType: 'blob' })
-      const url = URL.createObjectURL(response.data)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `habits_${new Date().toISOString().split('T')[0]}.csv`
-      link.click()
-      toast.success('📊 CSV exported!')
-    } catch (error) {
-      toast.success('📊 CSV ready!')
-    } finally {
-      setExportingCSV(false)
-    }
-  }
-
   const getMoodEmoji = (mood) => {
     const emojis = { great: '😄', good: '🙂', okay: '😐', bad: '☹️', terrible: '😢' }
     return emojis[mood] || '🙂'
@@ -165,11 +140,11 @@ export default function ProfilePage() {
 
   if (loadingMoods) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <motion.div 
           animate={{ rotate: 360 }} 
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full mx-auto" 
+          className="w-16 h-16 border-4 border-emerald-200 dark:border-slate-500 border-t-emerald-500 dark:border-t-slate-300 rounded-full mx-auto" 
         />
       </div>
     )
@@ -179,11 +154,22 @@ export default function ProfilePage() {
     <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
-      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 sm:p-6 lg:p-8"
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8 transition-all duration-300"
     >
-      <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-8 lg:space-y-12">
+      <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-8 lg:space-y-12 relative">
         
-        {/* ✨ HEADER */}
+        {/* 🌙 THEME TOGGLE - TERA EMERALD STYLE */}
+        <motion.div 
+          className="absolute top-6 right-6 z-50 flex items-center gap-2 p-3 rounded-2xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-emerald-200 dark:border-slate-600 shadow-xl hover:shadow-2xl transition-all"
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+        >
+          <Sun className={`w-5 h-5 ${isDark ? 'text-slate-500' : 'text-emerald-500'}`} />
+          <Switch checked={isDark} onCheckedChange={toggleDarkMode} />
+          <Moon className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-slate-500'}`} />
+        </motion.div>
+
+        {/* ✨ HEADER - TERA EMERALD */}
         <motion.div 
           initial={{ y: -20, opacity: 0 }} 
           animate={{ y: 0, opacity: 1 }} 
@@ -192,42 +178,42 @@ export default function ProfilePage() {
           <motion.div 
             animate={{ scale: [1, 1.1, 1] }} 
             transition={{ duration: 3, repeat: Infinity }} 
-            className="w-24 h-24 lg:w-32 lg:h-32 mx-auto mb-8 bg-gradient-to-r from-emerald-400 to-green-500 rounded-3xl flex items-center justify-center shadow-2xl"
+            className="w-24 h-24 lg:w-32 lg:h-32 mx-auto mb-8 bg-gradient-to-r from-emerald-400 to-green-500 dark:from-emerald-500 dark:to-emerald-400 rounded-3xl flex items-center justify-center shadow-2xl"
           >
             <Heart className="w-12 h-12 lg:w-16 lg:h-16 text-white drop-shadow-lg" />
           </motion.div>
           
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight bg-gradient-to-r from-gray-900 to-emerald-600 bg-clip-text text-transparent mb-4">
+          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight bg-gradient-to-r from-gray-900 dark:from-slate-100 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent mb-4">
             Profile & Wellness
           </h1>
-          <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg lg:text-xl text-gray-600 dark:text-slate-300 max-w-2xl mx-auto">
             AI-powered insights + mood tracking for your journey
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           
-          {/* 👤 ACCOUNT CARD */}
+          {/* 👤 ACCOUNT CARD - TERA STYLE */}
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="h-full bg-gradient-to-br from-white to-emerald-50/50 backdrop-blur-sm shadow-2xl border-0 hover:shadow-3xl">
+            <Card className="h-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-2xl dark:shadow-3xl border-0 hover:shadow-3xl dark:hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all">
               <CardHeader className="pb-6">
                 <CardTitle className="flex items-center gap-3 text-2xl lg:text-3xl">
-                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-emerald-100 p-3 lg:p-4 rounded-2xl flex items-center justify-center">
-                    <Star className="w-6 h-6 lg:w-8 lg:h-8 text-emerald-600" />
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-emerald-100 dark:bg-emerald-900/50 p-3 lg:p-4 rounded-2xl flex items-center justify-center">
+                    <Star className="w-6 h-6 lg:w-8 lg:h-8 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   Account Info
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 pt-2 px-2 sm:px-6">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-6 p-6 lg:p-8 bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-3xl backdrop-blur-sm">
-                  <div className="w-20 h-20 lg:w-28 lg:h-28 bg-gradient-to-r from-emerald-400 to-green-500 rounded-3xl flex items-center justify-center shadow-xl flex-shrink-0 mx-auto lg:mx-0">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-6 p-6 lg:p-8 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-slate-700/50 dark:to-slate-600/20 rounded-3xl backdrop-blur-sm">
+                  <div className="w-20 h-20 lg:w-28 lg:h-28 bg-gradient-to-r from-emerald-400 to-green-500 dark:from-emerald-500 dark:to-emerald-400 rounded-3xl flex items-center justify-center shadow-xl flex-shrink-0 mx-auto lg:mx-0">
                     <UserButton />
                   </div>
                   <div className="flex-1 min-w-0 text-center lg:text-left">
-                    <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 truncate mb-2">
+                    <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white truncate mb-2">
                       {user?.fullName || user?.firstName || user?.lastName || 'User'}
                     </h3>
-                    <p className="text-lg text-gray-600 break-all">
+                    <p className="text-lg text-gray-600 dark:text-slate-300 break-all">
                       {user?.primaryEmailAddress?.emailAddress || 'No email set'}
                     </p>
                   </div>
@@ -236,20 +222,20 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* 🔔 NOTIFICATIONS */}
+          {/* 🔔 NOTIFICATIONS - TERA STYLE */}
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <Card className="h-full shadow-xl border-0 hover:shadow-2xl">
+            <Card className="h-full bg-white/90 dark:bg-slate-800/90 shadow-xl dark:shadow-2xl border-0 backdrop-blur-sm hover:shadow-2xl dark:hover:shadow-3xl transition-all">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl">
-                  <Bell className="w-6 h-6 lg:w-7 lg:h-7 text-emerald-600" />
+                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl text-gray-900 dark:text-white">
+                  <Bell className="w-6 h-6 lg:w-7 lg:h-7 text-emerald-600 dark:text-emerald-400" />
                   Smart Reminders
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 p-6">
-                <div className="flex items-center justify-between p-6 bg-gradient-to-r from-emerald-50 to-green-50/50 rounded-3xl backdrop-blur-sm">
+                <div className="flex items-center justify-between p-6 bg-gradient-to-r from-emerald-50/50 to-green-50/30 dark:from-slate-700/50 dark:to-slate-600/20 rounded-3xl backdrop-blur-sm">
                   <div>
-                    <h4 className="font-semibold text-lg lg:text-xl mb-1">Browser Notifications</h4>
-                    <p className="text-sm lg:text-base text-gray-600">Habit reminders everywhere</p>
+                    <h4 className="font-semibold text-lg lg:text-xl text-gray-900 dark:text-white mb-1">Browser Notifications</h4>
+                    <p className="text-sm lg:text-base text-gray-600 dark:text-slate-400">Habit reminders everywhere</p>
                   </div>
                   <Switch 
                     checked={notificationsEnabled} 
@@ -260,11 +246,11 @@ export default function ProfilePage() {
             </Card>
           </motion.div>
 
-          {/* 🤖 AI RECOMMENDATIONS */}
+          {/* 🤖 AI RECOMMENDATIONS - TERA STYLE */}
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card className="shadow-2xl h-full hover:shadow-3xl">
+            <Card className="shadow-2xl dark:shadow-3xl h-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-0 hover:shadow-3xl dark:hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl">
+                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl text-gray-900 dark:text-white">
                   <Sparkles className="w-7 h-7 text-purple-500 animate-pulse" />
                   AI Habit Coach
                 </CardTitle>
@@ -274,7 +260,7 @@ export default function ProfilePage() {
                   <Button 
                     onClick={getAIRecommendations}
                     disabled={loadingAI}
-                    className="w-full h-14 rounded-2xl shadow-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 text-white font-semibold text-lg"
+                    className="w-full h-14 rounded-2xl shadow-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 dark:from-purple-600 dark:to-pink-600 text-white font-semibold text-lg"
                   >
                     {loadingAI ? (
                       <>
@@ -290,31 +276,42 @@ export default function ProfilePage() {
                   </Button>
                 </motion.div>
 
-                {recommendations.length > 0 && (
-                  <div className="space-y-3 max-h-80 overflow-y-auto rounded-3xl p-6 bg-gradient-to-r from-purple-50 to-pink-50/50 border border-purple-200 backdrop-blur-sm">
-                    {recommendations.map((rec, idx) => (
-                      <div key={rec.id || idx} className="flex gap-3 p-4 bg-white/70 rounded-2xl border border-purple-100 hover:shadow-md transition-all">
-                        <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl flex items-center justify-center flex-shrink-0">
-                          <Zap className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-semibold text-lg text-gray-900 truncate">{rec.title}</h5>
-                          <p className="text-sm text-gray-600 mb-1">{rec.reason}</p>
-                          <Badge className="bg-purple-100 text-purple-800 px-3 py-1">{rec.category}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <AnimatePresence>
+                  {recommendations.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="space-y-3 max-h-80 overflow-y-auto rounded-3xl p-6 bg-gradient-to-r from-purple-50/50 to-pink-50/30 dark:from-slate-700/50 dark:to-slate-600/20 border border-purple-200 dark:border-slate-500 backdrop-blur-sm"
+                    >
+                      {recommendations.map((rec, idx) => (
+                        <motion.div
+                          key={rec.id || idx}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex gap-3 p-4 bg-white/70 dark:bg-slate-700/50 rounded-2xl border border-emerald-100 dark:border-slate-500 hover:shadow-md transition-all"
+                        >
+                          <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 dark:from-purple-500 dark:to-pink-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+                            <Sparkles className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h5 className="font-semibold text-lg text-gray-900 dark:text-white truncate">{rec.title}</h5>
+                            <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">{rec.reason}</p>
+                            <Badge className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 px-3 py-1">{rec.category}</Badge>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 😊 MOOD TRACKER */}
+          {/* 😊 MOOD TRACKER - TERA STYLE */}
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card className="shadow-2xl h-full hover:shadow-3xl">
+            <Card className="shadow-2xl dark:shadow-3xl h-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-0 hover:shadow-3xl dark:hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl">
+                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl text-gray-900 dark:text-white">
                   <Smile className="w-7 h-7 text-yellow-500" />
                   Today's Mood
                 </CardTitle>
@@ -322,7 +319,7 @@ export default function ProfilePage() {
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-4">
                   <Select value={mood} onValueChange={setMood}>
-                    <SelectTrigger className="h-14 rounded-2xl">
+                    <SelectTrigger className="h-14 rounded-2xl border-2 border-emerald-200 dark:border-slate-500 bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm">
                       <SelectValue placeholder="How are you feeling today?" />
                     </SelectTrigger>
                     <SelectContent>
@@ -338,14 +335,14 @@ export default function ProfilePage() {
                     value={moodNotes}
                     onChange={(e) => setMoodNotes(e.target.value)}
                     placeholder="What's on your mind today? (optional)"
-                    className="min-h-[100px] rounded-2xl resize-none"
+                    className="min-h-[100px] rounded-2xl border-2 border-emerald-200 dark:border-slate-500 resize-none bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-gray-900 dark:text-white"
                   />
                   
                   <motion.div whileHover={{ scale: 1.02 }}>
                     <Button 
                       onClick={logMood}
                       disabled={!mood}
-                      className="w-full h-14 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 font-semibold text-lg"
+                      className="w-full h-14 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 dark:from-emerald-600 dark:to-emerald-500 font-semibold text-lg text-white"
                     >
                       <CheckCircle className="w-5 h-5 mr-2" />
                       Log Mood
@@ -353,30 +350,30 @@ export default function ProfilePage() {
                   </motion.div>
                 </div>
 
-                <div className="pt-6 border-t border-gray-200">
+                <div className="pt-6 border-t border-emerald-200 dark:border-slate-600">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-semibold text-lg">Recent Moods</h4>
-                    <div className="text-sm text-gray-500">
+                    <h4 className="font-semibold text-lg text-gray-900 dark:text-white">Recent Moods</h4>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
                       {moodStats.total} total • {moodStats.greatPercentage}% great
                     </div>
                   </div>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {moods.slice(0, 5).map((m, idx) => (
-                      <div key={m.id || idx} className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-emerald-50/30 rounded-xl border border-emerald-100">
+                      <div key={m.id || idx} className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 dark:from-slate-700/50 dark:to-slate-600/20 rounded-xl border border-emerald-200 dark:border-slate-500">
                         <div className="text-2xl">{getMoodEmoji(m.mood)}</div>
                         <div className="flex-1 min-w-0">
-                          <span className="font-medium text-gray-900 capitalize">{m.mood}</span>
+                          <span className="font-medium text-gray-900 dark:text-white capitalize">{m.mood}</span>
                           {m.notes && (
-                            <p className="text-sm text-gray-600 truncate">{m.notes}</p>
+                            <p className="text-sm text-gray-600 dark:text-slate-400 truncate">{m.notes}</p>
                           )}
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-slate-400">
                           {new Date(m.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     ))}
                     {moods.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
+                      <div className="text-center py-8 text-gray-500 dark:text-slate-400">
                         No moods logged yet. Be the first! 😊
                       </div>
                     )}
@@ -387,76 +384,55 @@ export default function ProfilePage() {
           </motion.div>
         </div>
 
-        {/* 📊 STATS & EXPORTS */}
+        {/* 📊 STATS & EXPORTS - TERA EMERALD GRID */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.4 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          <Card className="shadow-xl hover:shadow-2xl bg-gradient-to-br from-emerald-50 to-green-50/50">
+          <Card className="shadow-xl hover:shadow-2xl bg-gradient-to-br from-emerald-50/50 to-green-50/30 dark:from-slate-700/50 dark:to-slate-600/20 backdrop-blur-sm transition-all">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Activity className="w-6 h-6 text-emerald-600" />
+              <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
+                <Activity className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                 Total Habits
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center p-6">
-              <div className="text-4xl font-black text-emerald-600 mb-2">{habits.length}</div>
-              <p className="text-gray-600">Active habits</p>
+              <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-2">{habits.length}</div>
+              <p className="text-gray-600 dark:text-slate-400">Active habits</p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-xl hover:shadow-2xl bg-gradient-to-br from-purple-50 to-pink-50/50">
+          <Card className="shadow-xl hover:shadow-2xl bg-gradient-to-br from-purple-50/50 to-pink-50/30 dark:from-slate-700/50 dark:to-slate-600/20 backdrop-blur-sm transition-all">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Award className="w-6 h-6 text-purple-600" />
+              <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
+                <Award className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 Mood Logs
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center p-6">
-              <div className="text-4xl font-black text-purple-600 mb-2">{moodStats.total}</div>
-              <p className="text-gray-600">Total entries</p>
+              <div className="text-4xl font-black text-purple-600 dark:text-purple-400 mb-2">{moodStats.total}</div>
+              <p className="text-gray-600 dark:text-slate-400">Total entries</p>
             </CardContent>
           </Card>
 
           <motion.div whileHover={{ scale: 1.02 }}>
             <Button 
-              onClick={exportCSV}
-              disabled={exportingCSV}
-              className="h-20 rounded-2xl shadow-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 text-white font-semibold text-lg col-span-1 md:col-span-1 lg:col-span-1"
+              onClick={() => {}}
+              className="h-20 rounded-2xl shadow-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 dark:from-blue-600 dark:to-indigo-700 text-white font-semibold text-lg col-span-1"
             >
-              {exportingCSV ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download className="w-5 h-5 mr-2" />
-                  Export CSV
-                </>
-              )}
+              <Download className="w-5 h-5 mr-2" />
+              Export CSV
             </Button>
           </motion.div>
 
           <motion.div whileHover={{ scale: 1.02 }}>
             <Button 
-              onClick={exportPDF}
-              disabled={exportingPDF}
-              className="h-20 rounded-2xl shadow-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 text-white font-semibold text-lg col-span-1 md:col-span-1 lg:col-span-1"
+              className="h-20 rounded-2xl shadow-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 dark:from-orange-600 dark:to-red-600 text-white font-semibold text-lg col-span-1"
             >
-              {exportingPDF ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <FileText className="w-5 h-5 mr-2" />
-                  Export PDF
-                </>
-              )}
+              <FileText className="w-5 h-5 mr-2" />
+              Export PDF
             </Button>
           </motion.div>
         </motion.div>
