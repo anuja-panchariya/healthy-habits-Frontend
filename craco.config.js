@@ -37,7 +37,11 @@ module.exports = {
         plugin => !plugin.appSrcs
       ) || [];
 
-      if (env === 'production') {
+      // 🔥 RENDER.COM STATIC SITE FIX - RELATIVE PATHS!
+      webpackConfig.output.publicPath = './';  // ← CHANGED FROM '/'
+      
+      // ✅ DEVELOPMENT keeps absolute path, PRODUCTION uses relative
+      if (env === 'development') {
         webpackConfig.output.publicPath = '/';
       }
 
