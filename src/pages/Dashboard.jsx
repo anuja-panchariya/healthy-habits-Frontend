@@ -1,3 +1,4 @@
+// src/pages/Dashboard.jsx - BUILD SUCCESS ✅
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
@@ -25,7 +26,6 @@ export default function Dashboard() {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // 🎯 PROPER DARK MODE - Fixed
   useEffect(() => {
     const saved = localStorage.getItem('darkMode') === 'true';
     setIsDark(saved);
@@ -39,7 +39,6 @@ export default function Dashboard() {
     document.documentElement.classList.toggle('dark', newDark);
   };
 
-  // 🎯 REAL CALCULATIONS
   const calculateWellnessScore = useCallback((habitsData) => {
     if (!habitsData?.length) return 0;
     const today = new Date().toDateString();
@@ -54,7 +53,6 @@ export default function Dashboard() {
     return habitsData.reduce((max, habit) => Math.max(max, habit.streak || 0), 0);
   }, []);
 
-  // 🚀 LOAD DATA - Backend first
   const loadDashboardData = useCallback(async () => {
     if (!userId) return;
     
@@ -81,14 +79,13 @@ export default function Dashboard() {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  // ✅ FIXED HABIT LOG
   const handleLogHabit = async (habitId, habitTitle) => {
     try {
       const token = await getToken();
       setAuthToken(token);
       await api.post(`/api/habits/${habitId}/log`);
       toast.success(`✅ ${habitTitle} logged! +10 pts`);
-      loadDashboardData(); // Refresh
+      loadDashboardData();
     } catch (error) {
       if (error.message.includes('409')) {
         toast.info('Already logged today! ✨');
@@ -112,11 +109,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto relative">
+      <div className="max-w-7xl mx-auto">
         
-        {/* 🎯 PREMIUM TOP BAR */}
+        {/* TOP BAR */}
         <motion.div 
-          className="absolute top-8 right-8 z-50 flex items-center gap-3 p-4 rounded-2xl bg-card backdrop-blur-xl shadow-xl border border-border hover:shadow-2xl transition-all"
+          className="absolute top-8 right-8 z-50 flex items-center gap-3 p-4 rounded-2xl bg-card backdrop-blur-xl shadow-xl border hover:shadow-2xl transition-all"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
         >
@@ -128,7 +125,7 @@ export default function Dashboard() {
           />
         </motion.div>
 
-        {/* 🏆 HEADER - Luxury */}
+        {/* HEADER */}
         <motion.section
           initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -152,8 +149,8 @@ export default function Dashboard() {
             <div className="text-center">
               <motion.div
                 key={wellnessScore}
-                initial={{ scale: 0.8, rotateY: -180 }}
-                animate={{ scale: 1, rotateY: 0 }}
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
                 className="text-8xl lg:text-9xl font-black bg-gradient-to-r from-primary via-destructive to-primary bg-clip-text text-transparent mb-8 drop-shadow-2xl"
               >
                 {wellnessScore}
@@ -182,17 +179,18 @@ export default function Dashboard() {
                   <div className="text-sm text-muted-foreground uppercase tracking-wider">Today</div>
                 </div>
               </div>
-            </motion.div>
-          </motion.section>
+            </div>
+          </motion.div>
+        </motion.section>
 
-        {/* 🚀 PREMIUM BENTO GRID */}
+        {/* BENTO GRID */}
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
         >
           
-          {/* 🎯 MAIN ACTIONS - FIXED BUTTON */}
+          {/* MAIN ACTIONS */}
           <motion.div className="lg:col-span-2 h-72 group" 
             whileHover={{ y: -8 }}
             initial={{ y: 20, opacity: 0 }}
@@ -236,7 +234,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 📊 PREMIUM QUICK STATS - Redesigned */}
+          {/* QUICK STATS */}
           <motion.div className="lg:col-span-1 h-72" 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -277,7 +275,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 🎯 RECENT HABITS - Premium cards */}
+          {/* RECENT HABITS */}
           <motion.div className="lg:col-span-2 h-72" 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -353,7 +351,7 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-        {/* 💎 FOOTER CTA */}
+        {/* FOOTER CTA */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
