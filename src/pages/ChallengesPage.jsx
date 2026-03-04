@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Trophy, Users, Crown, CheckCircle, Plus } from 'lucide-react';
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -15,7 +15,6 @@ export default function ChallengesPage() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🚀 REAL CHALLENGES DATA
   const loadChallengesData = useCallback(async () => {
     if (!userId) return;
     
@@ -24,7 +23,6 @@ export default function ChallengesPage() {
       const token = await getToken();
       if (token) setAuthToken(token);
 
-      // Real API calls with safe fallbacks
       const challengesRes = await api.get("/api/challenges").catch(() => ({}));
       const myChallengesRes = await api.get("/api/challenges/my").catch(() => ({}));
       const leaderboardRes = await api.get("/api/challenges/leaderboard").catch(() => ({}));
@@ -35,13 +33,11 @@ export default function ChallengesPage() {
       
     } catch (error) {
       console.error("Challenges API error:", error);
-      toast.info("Using demo challenges...");
     } finally {
       setLoading(false);
     }
   }, [userId, getToken]);
 
-  // ✅ JOIN CHALLENGE
   const joinChallenge = async (challengeId) => {
     try {
       const token = await getToken();
@@ -50,7 +46,7 @@ export default function ChallengesPage() {
       toast.success("✅ Joined challenge!");
       loadChallengesData();
     } catch (error) {
-      toast.error("Join saved locally");
+      toast.info("Challenge saved locally");
     }
   };
 
@@ -60,23 +56,19 @@ export default function ChallengesPage() {
 
   if (loading) {
     return (
-      <motion.div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <motion.div 
           animate={{ rotate: 360 }} 
           transition={{ duration: 1, repeat: Infinity }}
           className="w-20 h-20 border-4 border-slate-600 border-t-emerald-500 rounded-full" 
         />
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div 
-      className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      <div className="max-w-7xl mx-auto space-y-8 pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 pt-24">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* HEADER */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 pb-12">
@@ -164,7 +156,7 @@ export default function ChallengesPage() {
                       >
                         Join Now
                       </Button>
-                    </motion.div>
+                    </div>
                   </motion.div>
                 ))
               ) : (
@@ -239,6 +231,6 @@ export default function ChallengesPage() {
           </Card>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
