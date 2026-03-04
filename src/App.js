@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/clerk-react';
-import Layout from './layouts/Layout';
+import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import HabitsPage from './pages/HabitsPage';
 import ChallengesPage from './pages/ChallengesPage';
