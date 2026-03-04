@@ -26,7 +26,13 @@ export default function ProfilePage() {
   const [habits, setHabits] = useState([])
   const [moodStats, setMoodStats] = useState({ total: 0, greatPercentage: 0 })
 
-  // 🎯 LOAD DATA (Safe APIs + Mock fallback)
+  // ✅ REAL USERNAME PRIORITY ORDER
+  const getDisplayName = () => {
+    if (!user) return 'Wellness Warrior'
+    return user.fullName || user.firstName || user.username || 'Healthy Habits User'
+  }
+
+  // 🎯 LOAD DATA
   const loadProfileData = useCallback(async () => {
     if (!isSignedIn) return
     
@@ -35,15 +41,15 @@ export default function ProfilePage() {
       const token = await getToken()
       if (token) setAuthToken(token)
 
-      // Mock data - Works without backend
+      // Mock data - Real API fallback
       const mockHabits = [
-        { id: 1, title: 'Drink Water', category: 'hydration', completed: true },
-        { id: 2, title: '30min Walk', category: 'fitness', completed: false }
+        { id: 1, title: 'Drink Water', category: 'Health', completed: true, streak: 3 },
+        { id: 2, title: '30min Walk', category: 'Fitness', completed: false, streak: 1 }
       ]
       
       const mockMoods = [
-        { id: 1, mood: 'great', notes: 'Feeling amazing!', created_at: new Date(Date.now() - 86400000) },
-        { id: 2, mood: 'good', notes: 'Productive day', created_at: new Date() }
+        { id: 1, mood: 'great', notes: 'Feeling amazing after workout!', created_at: new Date(Date.now() - 86400000) },
+        { id: 2, mood: 'good', notes: 'Productive coding day', created_at: new Date() }
       ]
       
       setHabits(mockHabits)
@@ -57,8 +63,8 @@ export default function ProfilePage() {
       })
 
       setRecommendations([
-        { title: "15min Meditation", reason: "Reduces stress instantly", category: "mindfulness" },
-        { title: "8 Glasses Water", reason: "Boosts focus 3x", category: "hydration" }
+        { title: "15min Meditation", reason: "Reduces stress instantly", category: "Mental Health" },
+        { title: "8 Glasses Water", reason: "Boosts focus 3x", category: "Health" }
       ])
       
     } catch (error) {
@@ -72,7 +78,6 @@ export default function ProfilePage() {
     loadProfileData()
   }, [loadProfileData])
 
-  // ✅ LOG MOOD (LocalStorage + Safe API)
   const logMood = async () => {
     if (!mood) {
       toast.error('Please select a mood! 😊')
@@ -84,7 +89,6 @@ export default function ProfilePage() {
       await api.post('/api/mood', { mood, notes: moodNotes })
       toast.success('✅ Mood logged!')
     } catch (error) {
-      // Save locally even if API fails
       const newMood = {
         id: Date.now(),
         mood,
@@ -92,7 +96,7 @@ export default function ProfilePage() {
         created_at: new Date()
       }
       setMoods(prev => [newMood, ...prev.slice(0, 6)])
-      toast.success('✅ Mood saved!')
+      toast.success('✅ Mood saved locally!')
     }
     setMood('')
     setMoodNotes('')
@@ -105,11 +109,11 @@ export default function ProfilePage() {
 
   if (loadingMoods) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900">
         <motion.div 
           animate={{ rotate: 360 }} 
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-emerald-500/20 dark:border-emerald-400 border-t-emerald-500 rounded-full mx-auto" 
+          className="w-16 h-16 border-4 border-emerald-400/20 border-t-emerald-500 rounded-full" 
         />
       </div>
     )
@@ -119,199 +123,220 @@ export default function ProfilePage() {
     <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
-      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300"
+      className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 p-4 sm:p-6 lg:p-8"
     >
-      <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-8 lg:space-y-12 pb-16 lg:pb-0">
+      <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto space-y-12 pb-16">
         
-        {/* ✨ HEADER - TERA DARK SLATE/EMERALD */}
+        {/* ✨ HEADER - SLATE/EMERALD PERFECTION */}
         <motion.div 
-          initial={{ y: -20, opacity: 0 }} 
+          initial={{ y: -30, opacity: 0 }} 
           animate={{ y: 0, opacity: 1 }} 
-          className="text-center mb-12 lg:mb-16"
+          className="text-center"
         >
           <motion.div 
-            animate={{ scale: [1, 1.1, 1] }} 
-            transition={{ duration: 3, repeat: Infinity }} 
-            className="w-24 h-24 lg:w-32 lg:h-32 mx-auto mb-8 bg-gradient-to-r from-emerald-500 to-emerald-400 dark:from-emerald-400 dark:to-emerald-300 rounded-3xl flex items-center justify-center shadow-2xl dark:shadow-emerald-500/25"
+            animate={{ scale: [1, 1.05, 1] }} 
+            transition={{ duration: 4, repeat: Infinity }} 
+            className="w-28 h-28 lg:w-36 lg:h-36 mx-auto mb-8 bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-500 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-emerald-500/30"
           >
-            <Heart className="w-12 h-12 lg:w-16 lg:h-16 text-slate-50 drop-shadow-lg" />
+            <Heart className="w-14 h-14 lg:w-16 lg:h-16 text-slate-900 drop-shadow-2xl" />
           </motion.div>
           
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight bg-gradient-to-r from-slate-100 dark:from-slate-100 to-emerald-400 bg-clip-text text-transparent mb-4 drop-shadow-lg">
-            Profile & Wellness
+          <h1 className="font-serif text-5xl lg:text-7xl font-light tracking-tight bg-gradient-to-r from-slate-100 via-slate-200 to-emerald-300 bg-clip-text text-transparent mb-6 drop-shadow-2xl">
+            Wellness Profile
           </h1>
-          <p className="text-lg lg:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto drop-shadow-sm">
-            AI-powered insights + mood tracking for your journey
+          <p className="text-xl lg:text-2xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            Track your journey with AI insights & mood analytics
           </p>
         </motion.div>
 
-        {/* MAIN GRID - DARK SLATE/EMERALD */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        {/* MAIN CONTENT GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8 lg:gap-12">
           
-          {/* 👤 ACCOUNT INFO - TERA STYLE */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="h-full bg-white/80 dark:bg-slate-800/90 backdrop-blur-xl shadow-2xl dark:shadow-slate-900/50 border-0 hover:shadow-3xl dark:hover:shadow-slate-900/70 transition-all group">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl lg:text-3xl text-slate-900 dark:text-slate-100">
-                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 dark:from-emerald-400/30 dark:to-emerald-300/30 p-3 lg:p-4 rounded-2xl flex items-center justify-center border border-emerald-400/30 dark:border-emerald-500/40">
-                    <Star className="w-6 h-6 lg:w-8 lg:h-8 text-emerald-500 dark:text-emerald-400" />
+          {/* 👤 PROFILE CARD - REAL USERNAME ONLY */}
+          <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }}>
+            <Card className="h-full bg-slate-800/90 backdrop-blur-xl shadow-2xl border border-slate-700/50 hover:shadow-emerald-500/20 hover:border-emerald-500/50 transition-all duration-500 group">
+              <CardHeader className="pb-8">
+                <CardTitle className="flex items-center gap-4 text-3xl lg:text-4xl text-slate-100 font-serif">
+                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-2xl border-4 border-slate-900/50 group-hover:scale-110 transition-transform">
+                    <Star className="w-8 h-8 lg:w-10 lg:h-10 text-slate-900" />
                   </div>
-                  Account Info
+                  Your Profile
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 pt-2 px-2 sm:px-6">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-6 p-6 lg:p-8 bg-gradient-to-r from-emerald-500/5 to-emerald-400/5 dark:from-slate-800/50 dark:to-slate-700/30 rounded-3xl backdrop-blur-sm border border-emerald-200/50 dark:border-slate-700">
-                  <div className="w-20 h-20 lg:w-28 lg:h-28 bg-gradient-to-r from-emerald-500 to-emerald-400 dark:from-emerald-400 dark:to-emerald-300 rounded-3xl flex items-center justify-center shadow-xl border-4 border-white/20 dark:border-slate-800/50 flex-shrink-0 mx-auto lg:mx-0">
+              <CardContent className="space-y-8 pt-4">
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  className="group/profile flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-8 p-8 lg:p-10 bg-gradient-to-br from-slate-700/50 to-emerald-500/10 rounded-3xl backdrop-blur-xl border border-slate-600/50 hover:border-emerald-400/50 transition-all duration-300"
+                >
+                  <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-r from-slate-800 to-slate-700 rounded-3xl flex items-center justify-center shadow-2xl border-4 border-slate-900/60 flex-shrink-0 ring-4 ring-emerald-500/20 mx-auto lg:mx-0">
                     <UserButton afterSignOutUrl="/sign-in" />
                   </div>
-                  <div className="flex-1 min-w-0 text-center lg:text-left">
-                    <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-slate-50 truncate mb-2">
-                      {user?.fullName || user?.firstName || 'Anuja Panchariya'}
-                    </h3>
-                    <p className="text-lg text-slate-600 dark:text-slate-300 break-all bg-slate-100/50 dark:bg-slate-700/50 px-4 py-2 rounded-2xl">
-                      {user?.primaryEmailAddress?.emailAddress || 'anuja@example.com'}
-                    </p>
+                  
+                  <div className="flex-1 text-center lg:text-left min-w-0">
+                    <h2 className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-slate-100 to-emerald-300 bg-clip-text text-transparent mb-4 leading-tight">
+                      {getDisplayName()}
+                    </h2>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                      <Badge className="text-lg px-6 py-3 bg-emerald-500/20 text-emerald-300 border-2 border-emerald-400/50 backdrop-blur-sm shadow-lg">
+                        Active Member
+                      </Badge>
+                      <Badge className="text-lg px-6 py-3 bg-slate-500/20 text-slate-300 border-2 border-slate-600/50 backdrop-blur-sm shadow-lg">
+                        {habits.length} Habits
+                      </Badge>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               </CardContent>
             </Card>
           </motion.div>
 
           {/* 🔔 NOTIFICATIONS */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <Card className="h-full bg-white/80 dark:bg-slate-800/90 backdrop-blur-xl shadow-2xl dark:shadow-slate-900/50 border-0 hover:shadow-3xl transition-all">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl text-slate-900 dark:text-slate-100">
-                  <Bell className="w-6 h-6 lg:w-7 lg:h-7 text-emerald-500 dark:text-emerald-400" />
+          <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+            <Card className="h-full bg-slate-800/90 backdrop-blur-xl shadow-2xl border border-slate-700/50 hover:shadow-emerald-500/20 hover:border-emerald-500/50 transition-all duration-500">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-4 text-2xl lg:text-3xl text-slate-100">
+                  <Bell className="w-8 h-8 text-emerald-400" />
                   Smart Notifications
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 p-6">
-                <div className="flex items-center justify-between p-6 bg-gradient-to-r from-emerald-500/5 to-emerald-400/5 dark:from-slate-800/60 dark:to-slate-700/40 rounded-3xl backdrop-blur-sm border border-emerald-200/30 dark:border-slate-700">
+              <CardContent className="space-y-6 p-8">
+                <div className="flex items-center justify-between p-8 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-3xl backdrop-blur-xl border border-emerald-400/40 hover:shadow-emerald-500/20 transition-all">
                   <div>
-                    <h4 className="font-semibold text-lg lg:text-xl text-slate-900 dark:text-slate-100 mb-1">Daily Reminders</h4>
-                    <p className="text-sm lg:text-base text-slate-600 dark:text-slate-400">Get habit nudges on time</p>
+                    <h4 className="font-bold text-2xl text-slate-100 mb-2">Daily Reminders</h4>
+                    <p className="text-lg text-slate-400">Smart nudges for your habits</p>
                   </div>
-                  <div className="w-14 h-7 bg-slate-200 dark:bg-slate-700 rounded-full p-1 flex items-center cursor-pointer">
-                    <div className="w-6 h-5 bg-emerald-500 rounded-full shadow-lg transform translate-x-0 transition-transform duration-200" />
+                  <div className="w-16 h-8 bg-slate-700/50 rounded-full p-1 flex items-center relative cursor-pointer hover:bg-slate-600/50 transition-all">
+                    <motion.div 
+                      className="w-7 h-6 bg-emerald-500 rounded-full shadow-lg"
+                      animate={{ x: 0 }}
+                      transition={{ duration: 0.2 }}
+                    />
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 🤖 AI RECOMMENDATIONS - TERA EMERALD */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card className="shadow-2xl dark:shadow-slate-900/70 h-full bg-white/80 dark:bg-slate-800/90 backdrop-blur-xl border-0 hover:shadow-3xl transition-all">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl text-slate-900 dark:text-slate-100">
-                  <Sparkles className="w-7 h-7 text-emerald-500 animate-pulse dark:text-emerald-400" />
+          {/* 🤖 AI RECOMMENDATIONS */}
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="shadow-2xl h-full bg-slate-800/90 backdrop-blur-xl border border-slate-700/50 hover:shadow-emerald-500/25 hover:border-emerald-500/50 transition-all lg:col-span-2">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-4 text-2xl lg:text-3xl text-slate-100">
+                  <Sparkles className="w-9 h-9 text-emerald-400 animate-pulse" />
                   AI Habit Coach
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 p-6">
+              <CardContent className="space-y-6 p-8">
                 <motion.div whileHover={{ scale: 1.02 }}>
                   <Button 
-                    onClick={() => toast.success('🤖 AI analyzing your habits...')}
-                    className="w-full h-14 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 dark:from-emerald-400 dark:to-emerald-500 text-slate-900 dark:text-slate-50 font-semibold text-lg"
+                    onClick={() => toast.success('🤖 AI analyzing your patterns...')}
+                    className="w-full h-16 rounded-3xl shadow-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-900 font-bold text-xl shadow-emerald-500/25"
                   >
-                    <Brain className="w-5 h-5 mr-2" />
-                    Analyze My Habits
+                    <Brain className="w-6 h-6 mr-3" />
+                    Get AI Recommendations
                   </Button>
                 </motion.div>
 
-                {recommendations.length > 0 && (
-                  <div className="space-y-3 max-h-80 overflow-y-auto rounded-3xl p-6 bg-gradient-to-r from-emerald-500/3 to-emerald-400/3 dark:from-slate-800/50 dark:to-slate-700/30 border border-emerald-200/30 dark:border-slate-700 backdrop-blur-sm">
-                    {recommendations.map((rec, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex gap-3 p-4 bg-white/70 dark:bg-slate-700/50 rounded-2xl border border-emerald-100/50 dark:border-slate-600 hover:shadow-md transition-all"
-                      >
-                        <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-400 dark:from-emerald-400 dark:to-emerald-300 rounded-2xl flex items-center justify-center flex-shrink-0">
-                          <Sparkles className="w-6 h-6 text-slate-50" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h5 className="font-semibold text-lg text-slate-900 dark:text-slate-100 truncate">{rec.title}</h5>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{rec.reason}</p>
-                          <Badge className="bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-400 px-3 py-1">
-                            {rec.category}
-                          </Badge>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
+                <div className="grid md:grid-cols-2 gap-4 max-h-96 overflow-y-auto rounded-3xl p-8 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border border-emerald-400/30 backdrop-blur-xl">
+                  {recommendations.map((rec, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="group flex gap-4 p-6 bg-slate-700/50 rounded-2xl border border-slate-600/50 hover:border-emerald-400/70 hover:bg-slate-700/70 transition-all shadow-lg hover:shadow-emerald-500/20"
+                    >
+                      <div className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-xl">
+                        <Sparkles className="w-7 h-7 text-slate-900" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="font-bold text-xl text-slate-100 group-hover:text-emerald-300 mb-2 truncate">{rec.title}</h5>
+                        <p className="text-slate-400 mb-3 leading-relaxed">{rec.reason}</p>
+                        <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 px-4 py-2 text-base font-semibold">
+                          {rec.category}
+                        </Badge>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 😊 MOOD TRACKER - TERA STYLE */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card className="shadow-2xl dark:shadow-slate-900/70 h-full bg-white/80 dark:bg-slate-800/90 backdrop-blur-xl border-0 hover:shadow-3xl transition-all">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl lg:text-2xl text-slate-900 dark:text-slate-100">
-                  <Smile className="w-7 h-7 text-emerald-500 dark:text-emerald-400" />
-                  Today's Mood
+          {/* 😊 MOOD TRACKER */}
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <Card className="shadow-2xl h-full bg-slate-800/90 backdrop-blur-xl border border-slate-700/50 hover:shadow-emerald-500/20 hover:border-emerald-500/50 transition-all">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-4 text-2xl lg:text-3xl text-slate-100">
+                  <Smile className="w-9 h-9 text-emerald-400" />
+                  Daily Mood Tracker
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="space-y-4">
+              <CardContent className="p-8 space-y-8">
+                <div className="space-y-6">
                   <Select value={mood} onValueChange={setMood}>
-                    <SelectTrigger className="h-14 rounded-2xl border-2 border-slate-200 dark:border-slate-600 bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-slate-900 dark:text-slate-100">
+                    <SelectTrigger className="h-16 rounded-3xl border-2 border-slate-600/50 bg-slate-700/50 backdrop-blur-xl text-slate-100 text-xl shadow-xl hover:border-emerald-400/70">
                       <SelectValue placeholder="How are you feeling today?" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="great">😄 Great</SelectItem>
-                      <SelectItem value="good">🙂 Good</SelectItem>
-                      <SelectItem value="okay">😐 Okay</SelectItem>
-                      <SelectItem value="bad">☹️ Bad</SelectItem>
-                      <SelectItem value="terrible">😢 Terrible</SelectItem>
+                    <SelectContent className="bg-slate-800 border-slate-700 backdrop-blur-xl">
+                      <SelectItem value="great" className="text-xl h-16">😄 Great</SelectItem>
+                      <SelectItem value="good" className="text-xl h-16">🙂 Good</SelectItem>
+                      <SelectItem value="okay" className="text-xl h-16">😐 Okay</SelectItem>
+                      <SelectItem value="bad" className="text-xl h-16">☹️ Bad</SelectItem>
+                      <SelectItem value="terrible" className="text-xl h-16">😢 Terrible</SelectItem>
                     </SelectContent>
                   </Select>
                   
                   <Textarea 
                     value={moodNotes}
                     onChange={(e) => setMoodNotes(e.target.value)}
-                    placeholder="What's on your mind today? (optional)"
-                    className="min-h-[100px] rounded-2xl border-2 border-slate-200 dark:border-slate-600 resize-none bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm text-slate-900 dark:text-slate-100"
+                    placeholder="What's making you feel this way? (optional)"
+                    className="min-h-[120px] rounded-3xl border-2 border-slate-600/50 resize-none bg-slate-700/50 backdrop-blur-xl text-slate-100 text-lg shadow-xl hover:border-emerald-400/70 focus:border-emerald-400/70"
                   />
                   
                   <motion.div whileHover={{ scale: 1.02 }}>
                     <Button 
                       onClick={logMood}
                       disabled={!mood}
-                      className="w-full h-14 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 dark:from-emerald-400 dark:to-emerald-500 text-slate-900 dark:text-slate-50 font-semibold text-lg"
+                      className="w-full h-16 rounded-3xl shadow-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-900 font-bold text-xl shadow-emerald-500/25"
                     >
-                      <CheckCircle className="w-5 h-5 mr-2" />
-                      Log Mood
+                      <CheckCircle className="w-6 h-6 mr-3" />
+                      Log Today's Mood
                     </Button>
                   </motion.div>
                 </div>
 
                 {/* RECENT MOODS */}
-                <div className="pt-6 border-t border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-semibold text-lg text-slate-900 dark:text-slate-100">Recent Moods</h4>
-                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                <div className="pt-8 border-t border-slate-700/50">
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="font-bold text-2xl text-slate-100">Recent Moods</h4>
+                    <div className="text-lg text-slate-400 font-mono">
                       {moodStats.total} total • {moodStats.greatPercentage}% great
                     </div>
                   </div>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {Array.isArray(moods) && moods.slice(0, 5).map((m, idx) => (
-                      <div key={m.id || idx} className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-500/5 to-emerald-400/5 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl border border-emerald-200/30 dark:border-slate-700">
-                        <div className="text-2xl">{getMoodEmoji(m.mood)}</div>
+                  <div className="space-y-3 max-h-48 overflow-y-auto">
+                    {moods.slice(0, 5).map((m, idx) => (
+                      <motion.div 
+                        key={m.id || idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center gap-4 p-6 bg-gradient-to-r from-slate-700/60 to-emerald-500/10 rounded-2xl border border-slate-600/50 hover:border-emerald-400/60 backdrop-blur-xl shadow-lg hover:shadow-emerald-500/20 transition-all"
+                      >
+                        <div className="text-3xl flex-shrink-0">{getMoodEmoji(m.mood)}</div>
                         <div className="flex-1 min-w-0">
-                          <span className="font-medium text-slate-900 dark:text-slate-100 capitalize">{m.mood}</span>
+                          <span className="font-bold text-xl text-slate-100 capitalize block">{m.mood}</span>
                           {m.notes && (
-                            <p className="text-sm text-slate-600 dark:text-slate-400 truncate">{m.notes}</p>
+                            <p className="text-lg text-slate-300 mt-1 truncate">{m.notes}</p>
                           )}
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {new Date(m.created_at).toLocaleDateString()}
+                        <span className="text-sm text-slate-500 font-mono bg-slate-700/50 px-3 py-1 rounded-xl">
+                          {new Date(m.created_at).toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
                         </span>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
@@ -320,50 +345,54 @@ export default function ProfilePage() {
           </motion.div>
         </div>
 
-        {/* 📊 STATS GRID - TERA EMERALD */}
+        {/* 📊 STATS DASHBOARD */}
         <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
+          initial={{ opacity: 0, y: 50 }} 
           animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          <Card className="shadow-xl hover:shadow-2xl bg-gradient-to-br from-emerald-500/5 to-emerald-400/5 dark:from-slate-800/50 dark:to-slate-700/30 backdrop-blur-sm border border-emerald-200/30 dark:border-slate-700 transition-all">
+          <Card className="shadow-2xl group bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-xl border border-emerald-400/40 hover:shadow-emerald-500/30 hover:border-emerald-500/60 transition-all">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl text-slate-900 dark:text-slate-100">
-                <Activity className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />
-                Total Habits
+              <CardTitle className="flex items-center gap-3 text-2xl text-slate-100">
+                <Activity className="w-7 h-7 text-emerald-400" />
+                Active Habits
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center p-6">
-              <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-2">{habits.length}</div>
-              <p className="text-slate-600 dark:text-slate-400">Active habits</p>
+              <div className="text-5xl font-black bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-2">
+                {habits.length}
+              </div>
+              <p className="text-slate-400 text-lg">Tracking daily</p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-xl hover:shadow-2xl bg-gradient-to-br from-slate-500/10 to-slate-400/10 dark:from-slate-800/60 dark:to-slate-700/40 backdrop-blur-sm border border-slate-300/30 dark:border-slate-600 transition-all">
+          <Card className="shadow-2xl group bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-xl border border-slate-600/50 hover:shadow-slate-500/30 hover:border-slate-500/60 transition-all">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl text-slate-900 dark:text-slate-100">
-                <Award className="w-6 h-6 text-slate-400" />
-                Mood Logs
+              <CardTitle className="flex items-center gap-3 text-2xl text-slate-100">
+                <Award className="w-7 h-7 text-slate-300" />
+                Mood Entries
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center p-6">
-              <div className="text-4xl font-black text-slate-600 dark:text-slate-300 mb-2">{moodStats.total}</div>
-              <p className="text-slate-600 dark:text-slate-400">Total entries</p>
+              <div className="text-5xl font-black bg-gradient-to-r from-slate-300 to-slate-200 bg-clip-text text-transparent mb-2">
+                {moodStats.total}
+              </div>
+              <p className="text-slate-400 text-lg">Total logged</p>
             </CardContent>
           </Card>
 
-          <motion.div whileHover={{ scale: 1.02 }}>
-            <Button className="h-20 rounded-2xl shadow-xl bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 dark:from-slate-500 dark:to-slate-600 text-slate-50 font-semibold text-lg col-span-1">
-              <Download className="w-5 h-5 mr-2" />
-              Export CSV
+          <motion.div whileHover={{ scale: 1.05 }} className="lg:col-span-1">
+            <Button className="h-24 w-full rounded-3xl shadow-2xl bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-slate-100 font-bold text-xl shadow-slate-500/25">
+              <Download className="w-6 h-6 mr-3" />
+              Export Data
             </Button>
           </motion.div>
 
-          <motion.div whileHover={{ scale: 1.02 }}>
-            <Button className="h-20 rounded-2xl shadow-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 dark:from-emerald-400 dark:to-emerald-500 text-slate-900 dark:text-slate-50 font-semibold text-lg col-span-1">
-              <FileText className="w-5 h-5 mr-2" />
-              Export PDF
+          <motion.div whileHover={{ scale: 1.05 }} className="lg:col-span-1">
+            <Button className="h-24 w-full rounded-3xl shadow-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-900 font-bold text-xl shadow-emerald-500/25">
+              <FileText className="w-6 h-6 mr-3" />
+              Print Report
             </Button>
           </motion.div>
         </motion.div>
