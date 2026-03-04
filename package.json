@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "homepage": "./",
+   "homepage": "./",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -63,24 +63,9 @@
     "zod": "^3.24.4"
   },
   "scripts": {
+     "build:craco": "craco build",
     "start": "npx serve -s build -l $PORT",
-    "build": "craco build",
-    "build:craco": "craco build",
-    "preview": "npm run build:craco && npx serve -s build -l 3000",
-    "dev": "craco start"
-  },
-  "engines": {
-    "node": "22.x",
-    "npm": "10.x"
-  },
-  "overrides": {
-    "react-scripts": "$react_scripts",
-    "eslint": "$eslint",
-    "@eslint/js": "$eslint"
-  },
-  "resolutions": {
-    "@babel/core": "^7.24.0",
-    "typescript": "^5.6.3"
+    "preview": "npm run build:craco && npx serve -s build -l 3000"
   },
   "browserslist": {
     "production": [
