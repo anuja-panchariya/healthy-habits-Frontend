@@ -1,55 +1,24 @@
-const path = require("path");
-const webpack = require('webpack');
-
+// craco.config.js
 module.exports = {
-  eslint: {
-    configure: {
-      extends: ["plugin:react-hooks/recommended"],
-      rules: {
-        "react-hooks/rules-of-hooks": "error",
-        "react-hooks/exhaustive-deps": "warn",
-      },
+  style: {
+    postcss: {
+      plugins: [
+        require('tailwindcss'),
+        require('autoprefixer'),
+      ],
     },
   },
-
   devServer: {
-    historyApiFallback: true,
-    static: path.join(__dirname, 'public'),
+    historyApiFallback: true, // ✅ CRACO SPA ROUTING
   },
-
   webpack: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
-    configure: (webpackConfig, { env }) => {
-      webpackConfig.watchOptions = {
-        ...webpackConfig.watchOptions,
-        ignored: [
-          "**/node_modules/**",
-          "**/.git/**",
-          "**/build/**",
-          "**/dist/**",
-        ],
+    configure: (webpackConfig) => {
+      webpackConfig.resolve.fallback = {
+        ...webpackConfig.resolve.fallback,
+        "path": false,
+        "fs": false
       };
-
-      // ✅ FIX IMPORT ERROR - Remove ModuleScopePlugin
-      webpackConfig.resolve.plugins = webpackConfig.resolve.plugins?.filter(
-        plugin => !plugin.appSrcs
-      ) || [];
-
-      if (env === 'production') {
-        webpackConfig.output.publicPath = '/';
-      }
-
-      webpackConfig.plugins.push(
-        new webpack.DefinePlugin({
-          'window.ENV': JSON.stringify({
-            VITE_API_URL: process.env.VITE_API_URL || 'https://healthy-habits-be-1.onrender.com/api'
-          })
-        })
-      );
-
       return webpackConfig;
-    },
-  },
+    }
+  }
 };
