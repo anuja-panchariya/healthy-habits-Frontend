@@ -5,7 +5,7 @@ import Dashboard from './pages/Dashboard';
 import HabitsPage from './pages/HabitsPage';
 import ChallengesPage from './pages/ChallengesPage';
 import ProfilePage from './pages/ProfilePage';
-import Navbar from './components/Navbar';
+import Navbar from './components/Layout';
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
