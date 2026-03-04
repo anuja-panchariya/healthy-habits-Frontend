@@ -63,11 +63,9 @@
     "zod": "^3.24.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "build:craco": "craco build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+     "build:craco": "craco build",
+    "start": "npx serve -s build -l $PORT",
+    "preview": "npm run build:craco && npx serve -s build -l 3000"
   },
   "browserslist": {
     "production": [
