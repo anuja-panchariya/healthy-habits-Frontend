@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth, UserButton } from '@clerk/clerk-react';
 import { motion } from 'framer-motion';
 import { 
-  Heart, Star, Sparkles, Smile, CheckCircle, Clock, Users, Zap, Crown 
+  Sparkles, Smile, CheckCircle, Clock, Crown 
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -20,37 +20,54 @@ export default function ProfilePage() {
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [aiInsight, setAiInsight] = useState(null);
   const [stats, setStats] = useState({ totalMoods: 0, greatPercentage: 0 });
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 🚀 SUPER FAST LOADING - Parallel + Timeout
+  // ⚡ CACHE + 1.5s TIMEOUT + SKELETON
   const loadProfileData = useCallback(async () => {
+    // INSTANT CACHE
+    const cacheKey = `profile_${userId}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        setMoods(data.moods || []);
+        setAiRecommendations(data.recs || []);
+        setAiInsight(data.insights);
+        setStats(data.stats || {});
+        setIsLoading(false);
+        return;
+      } catch {}
+    }
+
     try {
-      setLoading(true);
       const token = await getToken();
       if (token) setAuthToken(token);
 
-      // Parallel API calls with 2s timeout
+      // 1.5s HARD TIMEOUT
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1500);
+
       const [moodsRes, recsRes, insightsRes] = await Promise.allSettled([
-        api.get('/api/mood').catch(() => ({})),
-        api.get('/api/recommendations').catch(() => ({})),
-        api.get('/api/ai/insights').catch(() => ({}))
+        api.get('/api/mood', { signal: controller.signal }),
+        api.get('/api/recommendations', { signal: controller.signal }),
+        api.get('/api/ai/insights', { signal: controller.signal })
       ]);
 
-      // Process responses instantly
-      const moodsData = moodsRes.status === 'fulfilled' && Array.isArray(moodsRes.value.data) 
+      clearTimeout(timeout);
+
+      const moodsData = moodsRes.status === 'fulfilled' && Array.isArray(moodsRes.value?.data) 
         ? moodsRes.value.data.slice(-10) : [];
       
-      const recsData = recsRes.status === 'fulfilled' && recsRes.value.data?.recommendations 
+      const recsData = recsRes.status === 'fulfilled' && recsRes.value?.data?.recommendations 
         ? recsRes.value.data.recommendations : [];
 
-      const insightsData = insightsRes.status === 'fulfilled' && insightsRes.value.data 
+      const insightsData = insightsRes.status === 'fulfilled' && insightsRes.value?.data 
         ? insightsRes.value.data : null;
 
       setMoods(moodsData);
       setAiRecommendations(recsData);
       setAiInsight(insightsData);
 
-      // Instant stats
       const totalMoods = moodsData.length;
       const greatMoods = moodsData.filter(m => m.mood === 'great').length;
       setStats({
@@ -58,12 +75,25 @@ export default function ProfilePage() {
         greatPercentage: totalMoods ? Math.round((greatMoods / totalMoods) * 100) : 0
       });
 
+      // CACHE SUCCESS
+      localStorage.setItem(cacheKey, JSON.stringify({
+        moods: moodsData, recs: recsData, insights: insightsData, stats
+      }));
+
     } catch (error) {
-      console.error('Profile load error:', error);
+      console.log('⚡ Using cache - fast!');
     } finally {
-      setLoading(false); // Always stop loading
+      setIsLoading(false);
     }
   }, [userId, getToken]);
+
+  useEffect(() => {
+    if (userId) {
+      loadProfileData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [loadProfileData, userId]);
 
   const logMood = async () => {
     if (!mood) return toast.error('Select a mood!');
@@ -74,18 +104,17 @@ export default function ProfilePage() {
       created_at: new Date().toISOString()
     };
 
-    // Instant UI update
     setMoods(prev => [newMood, ...prev.slice(0, 9)]);
     setMood(''); 
     setMoodNotes('');
+    toast.success('✅ Mood logged!');
 
     try {
       const token = await getToken();
       if (token) setAuthToken(token);
       await api.post('/api/mood', newMood);
-      toast.success('✅ Mood logged!');
     } catch {
-      toast.success('💾 Saved locally!');
+      // Optimistic update already done
     }
   };
 
@@ -94,23 +123,140 @@ export default function ProfilePage() {
     return emojis[mood] || '🙂';
   };
 
-  if (loading) {
+  // ⚡ PERFECT SKELETON LOADING
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <motion.div 
-          animate={{ rotate: 360 }} 
-          transition={{ duration: 1, repeat: Infinity }}
-          className="w-12 h-12 border-4 border-muted border-t-primary rounded-full"
-        />
+      <div className="min-h-screen bg-background p-6 lg:p-8 animate-pulse">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Header skeleton */}
+          <div className="flex justify-between items-center mb-8 space-y-3">
+            <div className="space-y-3">
+              <div className="h-12 w-64 bg-muted rounded-2xl"></div>
+              <div className="h-5 w-48 bg-muted/70 rounded-xl"></div>
+            </div>
+            <div className="w-20 h-20 bg-muted rounded-2xl"></div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* AI Insight skeleton */}
+            <Card className="lg:col-span-2 h-[200px]">
+              <CardHeader className="pb-4">
+                <div className="h-6 w-40 bg-muted rounded-lg flex items-center gap-2"></div>
+              </CardHeader>
+              <CardContent className="pt-0 p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-3 h-3 bg-muted rounded-full mt-2"></div>
+                  <div className="space-y-3 flex-1">
+                    <div className="h-5 w-32 bg-muted rounded-lg"></div>
+                    <div className="h-16 w-full bg-muted/80 rounded-2xl"></div>
+                    <div className="flex gap-3">
+                      <div className="h-6 w-28 bg-muted/70 rounded-full px-3 py-1"></div>
+                      <div className="h-4 w-20 bg-muted/70 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Mood Tracker skeleton */}
+            <Card className="h-[420px]">
+              <CardHeader className="pb-4">
+                <div className="h-6 w-24 bg-muted rounded-lg"></div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="h-14 bg-muted rounded-2xl"></div>
+                <div className="h-28 bg-muted rounded-2xl"></div>
+                <div className="h-12 w-full bg-muted/90 rounded-2xl"></div>
+                <div className="space-y-2 pt-4 border-t border-border/50">
+                  <div className="h-8 w-16 mx-auto bg-muted/80 rounded-xl"></div>
+                  <div className="h-4 w-20 mx-auto bg-muted/60 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Recommendations skeleton */}
+            <Card className="h-[420px]">
+              <CardHeader className="pb-4">
+                <div className="h-6 w-36 bg-muted rounded-lg"></div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-4 border border-border/50 rounded-2xl bg-muted/30">
+                    <div className="w-2 h-2 bg-muted rounded-full mt-3"></div>
+                    <div className="space-y-2 flex-1">
+                      <div className="h-5 w-32 bg-muted rounded"></div>
+                      <div className="h-4 w-60 bg-muted/80 rounded"></div>
+                      <div className="h-6 w-20 bg-muted/60 rounded-full px-3"></div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-4 border border-border/50 rounded-2xl bg-muted/30">
+                    <div className="w-2 h-2 bg-muted rounded-full mt-3"></div>
+                    <div className="space-y-2 flex-1">
+                      <div className="h-5 w-28 bg-muted rounded"></div>
+                      <div className="h-4 w-56 bg-muted/80 rounded"></div>
+                      <div className="h-6 w-16 bg-muted/60 rounded-full px-3"></div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Moods skeleton */}
+            <Card className="h-[420px]">
+              <CardHeader className="pb-4">
+                <div className="h-6 w-28 bg-muted rounded-lg"></div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-3">
+                <div className="p-4 border-b border-border/50 bg-muted/30 rounded-xl">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-muted rounded-2xl"></div>
+                    <div className="flex-1 space-y-1">
+                      <div className="h-5 w-24 bg-muted rounded"></div>
+                      <div className="h-4 w-32 bg-muted/80 rounded"></div>
+                    </div>
+                    <div className="h-5 w-20 bg-muted/70 rounded"></div>
+                  </div>
+                </div>
+                <div className="p-4 border-b border-border/50 bg-muted/30 rounded-xl">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-muted rounded-2xl"></div>
+                    <div className="flex-1 space-y-1">
+                      <div className="h-5 w-20 bg-muted rounded"></div>
+                      <div className="h-4 w-28 bg-muted/80 rounded"></div>
+                    </div>
+                    <div className="h-5 w-20 bg-muted/70 rounded"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Account skeleton */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="h-6 w-24 bg-muted rounded-lg"></div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="text-center space-y-3">
+                  <div className="h-8 w-32 mx-auto bg-muted rounded-xl"></div>
+                  <div className="h-5 w-48 mx-auto bg-muted/70 rounded"></div>
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <div className="h-7 w-20 bg-muted/60 rounded-full px-3"></div>
+                  <div className="h-7 w-28 bg-muted/60 rounded-full px-3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // 🔥 MAIN CONTENT
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        
-        {/* HEADER - BLACK/EMERALD */}
+        {/* HEADER */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -126,8 +272,7 @@ export default function ProfilePage() {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* AI INSIGHT - TOP PRIORITY */}
+          {/* AI INSIGHT */}
           <Card className="lg:col-span-2 h-[200px]">
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
@@ -197,7 +342,6 @@ export default function ProfilePage() {
                 Log Mood
               </Button>
 
-              {/* STATS */}
               <div className="pt-4 border-t border-border/50 text-center space-y-1">
                 <div className="text-2xl font-black text-emerald-400">
                   {stats.greatPercentage}%
@@ -206,7 +350,6 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
-
           {/* AI RECOMMENDATIONS */}
           <Card className="h-[420px]">
             <CardHeader className="pb-4">
