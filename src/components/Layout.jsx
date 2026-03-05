@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { UserButton, useAuth } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
 import { Home, Activity, BarChart3, Trophy, User, Moon, Sun } from 'lucide-react'
-import { useTheme } from './theme-provider'
+import { useTheme } from './theme-provider.jsx'
 import { Button } from './ui/button'
 
 export default function Layout({ children }) {
