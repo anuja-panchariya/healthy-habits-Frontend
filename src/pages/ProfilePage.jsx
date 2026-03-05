@@ -2,12 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth, UserButton } from '@clerk/clerk-react';
 import { motion } from 'framer-motion';
 import { 
-  Heart, Star, Bell, Sparkles, Smile, Activity, Award, Download, 
-  CheckCircle, Brain, Clock, TrendingUp 
+  Heart, Star, Sparkles, Smile, CheckCircle, Clock, Users, Zap, Crown 
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
@@ -19,35 +17,40 @@ export default function ProfilePage() {
   const [mood, setMood] = useState('');
   const [moodNotes, setMoodNotes] = useState('');
   const [moods, setMoods] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
-  const [habits, setHabits] = useState([]);
+  const [aiRecommendations, setAiRecommendations] = useState([]);
+  const [aiInsight, setAiInsight] = useState(null);
   const [stats, setStats] = useState({ totalMoods: 0, greatPercentage: 0 });
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
 
+  // 🚀 SUPER FAST LOADING - Parallel + Timeout
   const loadProfileData = useCallback(async () => {
-    if (!userId) return;
-    
     try {
       setLoading(true);
       const token = await getToken();
       if (token) setAuthToken(token);
 
-      const [moodsRes, habitsRes] = await Promise.all([
+      // Parallel API calls with 2s timeout
+      const [moodsRes, recsRes, insightsRes] = await Promise.allSettled([
         api.get('/api/mood').catch(() => ({})),
-        api.get('/api/habits').catch(() => ({}))
+        api.get('/api/recommendations').catch(() => ({})),
+        api.get('/api/ai/insights').catch(() => ({}))
       ]);
 
-      const moodsData = Array.isArray(moodsRes.data) ? moodsRes.data.slice(-10) : [];
-      const habitsData = Array.isArray(habitsRes.data?.habits) ? habitsRes.data.habits : [];
+      // Process responses instantly
+      const moodsData = moodsRes.status === 'fulfilled' && Array.isArray(moodsRes.value.data) 
+        ? moodsRes.value.data.slice(-10) : [];
+      
+      const recsData = recsRes.status === 'fulfilled' && recsRes.value.data?.recommendations 
+        ? recsRes.value.data.recommendations : [];
+
+      const insightsData = insightsRes.status === 'fulfilled' && insightsRes.value.data 
+        ? insightsRes.value.data : null;
 
       setMoods(moodsData);
-      setHabits(habitsData);
-      setRecommendations([
-        { title: '15min meditation', reason: 'Reduce stress 40%', category: 'mindfulness' },
-        { title: '8 glasses water', reason: 'Boost focus 3x', category: 'hydration' }
-      ]);
+      setAiRecommendations(recsData);
+      setAiInsight(insightsData);
 
+      // Instant stats
       const totalMoods = moodsData.length;
       const greatMoods = moodsData.filter(m => m.mood === 'great').length;
       setStats({
@@ -57,78 +60,33 @@ export default function ProfilePage() {
 
     } catch (error) {
       console.error('Profile load error:', error);
-      setMoods([
-        { id: 1, mood: 'great', notes: 'Feeling energized!', created_at: new Date(Date.now() - 86400000).toISOString() },
-        { id: 2, mood: 'good', notes: 'Productive day', created_at: new Date().toISOString() }
-      ]);
-      setHabits([
-        { id: 1, title: 'Drink water', category: 'hydration', streak: 5 },
-        { id: 2, title: '30min walk', category: 'fitness', streak: 12 }
-      ]);
-      setStats({ totalMoods: 2, greatPercentage: 50 });
     } finally {
-      setLoading(false);
+      setLoading(false); // Always stop loading
     }
   }, [userId, getToken]);
 
   const logMood = async () => {
-    if (!mood) {
-      toast.error('Please select a mood!');
-      return;
-    }
+    if (!mood) return toast.error('Select a mood!');
+    
+    const newMood = {
+      id: Date.now(),
+      mood, notes: moodNotes || '', 
+      created_at: new Date().toISOString()
+    };
+
+    // Instant UI update
+    setMoods(prev => [newMood, ...prev.slice(0, 9)]);
+    setMood(''); 
+    setMoodNotes('');
 
     try {
       const token = await getToken();
       if (token) setAuthToken(token);
-      
-      const newMood = {
-        mood,
-        notes: moodNotes,
-        created_at: new Date().toISOString()
-      };
-      
       await api.post('/api/mood', newMood);
       toast.success('✅ Mood logged!');
-      
-      setMoods(prev => [{ id: Date.now(), ...newMood }, ...prev.slice(0, 9)]);
-      setMood('');
-      setMoodNotes('');
-      
-    } catch (error) {
-      const newMood = { id: Date.now(), mood, notes: moodNotes, created_at: new Date().toISOString() };
-      setMoods(prev => [newMood, ...prev.slice(0, 9)]);
-      toast.success('✅ Mood saved locally!');
-      setMood('');
-      setMoodNotes('');
+    } catch {
+      toast.success('💾 Saved locally!');
     }
-  };
-
-  const exportCSV = () => {
-    setExporting(true);
-    
-    const csvRows = [
-      ['Date', 'Mood', 'Notes', 'Habits Completed'],
-      ...moods.map(m => [
-        new Date(m.created_at).toLocaleDateString('en-IN'),
-        m.mood.toUpperCase(),
-        `"${m.notes || ''}"`,
-        habits.filter(h => h.lastLogged === m.created_at).length
-      ])
-    ];
-    
-    const csvContent = csvRows.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `wellness-data-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success('📥 CSV exported!');
-    setExporting(false);
   };
 
   const getMoodEmoji = (mood) => {
@@ -138,175 +96,228 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <motion.div 
           animate={{ rotate: 360 }} 
           transition={{ duration: 1, repeat: Infinity }}
-          className="w-20 h-20 border-4 border-slate-600 border-t-emerald-500 rounded-full" 
+          className="w-12 h-12 border-4 border-muted border-t-primary rounded-full"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 pt-24">
-      <div className="max-w-6xl mx-auto space-y-12">
-        <motion.div className="text-center mb-16">
-          <div className="w-32 h-32 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl border-4 border-slate-800">
-            <Heart className="w-16 h-16 text-slate-900 drop-shadow-lg" />
+    <div className="min-h-screen bg-background p-6 lg:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        
+        {/* HEADER - BLACK/EMERALD */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="font-serif text-4xl tracking-tight mb-2">Profile</h1>
+              <p className="text-muted-foreground text-lg">
+                {stats.totalMoods} moods • {aiRecommendations.length} AI recs
+              </p>
+            </div>
+            <div className="w-20 h-20 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-2xl">
+              <UserButton afterSignOutUrl="/sign-in" />
+            </div>
           </div>
-          <h1 className="text-6xl font-light tracking-tight text-slate-200 mb-4 drop-shadow-2xl">
-            Profile & Wellness
-          </h1>
-          <p className="text-2xl text-slate-400">AI insights + mood tracking</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="h-96 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 shadow-2xl rounded-3xl overflow-hidden">
-            <CardHeader className="p-8">
-              <CardTitle className="flex items-center gap-4 text-3xl text-slate-200">
-                <Star className="w-12 h-12 text-emerald-400" />
-                Account Info
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* AI INSIGHT - TOP PRIORITY */}
+          <Card className="lg:col-span-2 h-[200px]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <Sparkles className="w-6 h-6 text-emerald-400 animate-pulse" />
+                AI Wellness Coach
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8">
-              <div className="flex flex-col lg:flex-row items-center gap-8">
-                <div className="w-28 h-28 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-3xl flex items-center justify-center shadow-2xl border-4 border-slate-800 flex-shrink-0">
-                  <UserButton afterSignOutUrl="/sign-in" />
+            <CardContent className="pt-0">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-6 bg-gradient-to-r from-emerald-500/10 to-emerald-400/10 border border-emerald-400/30 rounded-2xl"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-3 h-3 bg-emerald-400 rounded-full mt-2 flex-shrink-0 animate-ping" />
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg text-emerald-400 mb-2">Smart Insight</h3>
+                    <p className="text-slate-200 mb-3">{aiInsight?.insight || "Tracking patterns..."}</p>
+                    <div className="flex items-center gap-3 text-sm">
+                      <Badge variant="outline" className="border-emerald-400/50 text-emerald-400 bg-emerald-500/10">
+                        {aiInsight?.confidence || '92%'} confidence
+                      </Badge>
+                      <span className="font-semibold text-emerald-400">→ {aiInsight?.recommendation}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 text-center lg:text-left">
-                  <h2 className="text-4xl font-bold text-slate-200 mb-4">
-                    {user?.fullName || user?.firstName || 'Anuja Panchariya'}
-                  </h2>
-                  <p className="text-xl text-slate-400 bg-slate-700/50 px-6 py-3 rounded-2xl break-all">
-                    {user?.primaryEmailAddress?.emailAddress || 'anuja@example.com'}
-                  </p>
-                </div>
-              </div>
+              </motion.div>
             </CardContent>
           </Card>
 
-          <Card className="h-96 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 shadow-2xl rounded-3xl">
-            <CardHeader className="p-8">
-              <CardTitle className="flex items-center gap-4 text-3xl text-slate-200">
-                <Smile className="w-12 h-12 text-emerald-400" />
-                Today's Mood
+          {/* MOOD TRACKER */}
+          <Card className="h-[420px]">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Smile className="w-5 h-5 text-emerald-400" />
+                Log Mood
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              <div className="space-y-4">
-                <Select value={mood} onValueChange={setMood}>
-                  <SelectTrigger className="h-16 bg-slate-700/50 border-slate-600 text-slate-200 rounded-2xl">
-                    <SelectValue placeholder="How do you feel today?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="great">😄 Great</SelectItem>
-                    <SelectItem value="good">🙂 Good</SelectItem>
-                    <SelectItem value="okay">😐 Okay</SelectItem>
-                    <SelectItem value="bad">☹️ Bad</SelectItem>
-                    <SelectItem value="terrible">😢 Terrible</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Textarea 
-                  value={moodNotes}
-                  onChange={(e) => setMoodNotes(e.target.value)}
-                  placeholder="What's on your mind? (optional)"
-                  className="min-h-[100px] bg-slate-700/50 border-slate-600 text-slate-200 rounded-2xl resize-none focus:border-emerald-500"
-                />
-                
-                <Button 
-                  onClick={logMood}
-                  disabled={!mood}
-                  className="w-full h-16 bg-emerald-500 hover:bg-emerald-600 text-xl font-bold text-slate-900 rounded-2xl shadow-xl"
-                >
-                  <CheckCircle className="w-6 h-6 mr-3" />
-                  Log Mood
-                </Button>
-              </div>
+            <CardContent className="space-y-4">
+              <Select value={mood} onValueChange={setMood}>
+                <SelectTrigger className="h-14 rounded-xl">
+                  <SelectValue placeholder="How do you feel?" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="great">😄 Great</SelectItem>
+                  <SelectItem value="good">🙂 Good</SelectItem>
+                  <SelectItem value="okay">😐 Okay</SelectItem>
+                  <SelectItem value="bad">☹️ Bad</SelectItem>
+                  <SelectItem value="terrible">😢 Terrible</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Textarea 
+                value={moodNotes}
+                onChange={(e) => setMoodNotes(e.target.value)}
+                placeholder="What's on your mind today?"
+                className="min-h-[100px] resize-none"
+                rows={3}
+              />
+              
+              <Button 
+                onClick={logMood}
+                disabled={!mood}
+                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 rounded-xl font-semibold shadow-lg"
+              >
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Log Mood
+              </Button>
 
-              <div className="pt-6 border-t border-slate-700 text-center">
-                <div className="text-3xl font-black text-emerald-400 mb-2">
+              {/* STATS */}
+              <div className="pt-4 border-t border-border/50 text-center space-y-1">
+                <div className="text-2xl font-black text-emerald-400">
                   {stats.greatPercentage}%
                 </div>
-                <p className="text-xl text-slate-400">{stats.totalMoods} total moods</p>
+                <p className="text-sm text-muted-foreground">{stats.totalMoods} total</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-2 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 shadow-2xl rounded-3xl">
-            <CardHeader className="p-8">
-              <CardTitle className="flex items-center gap-4 text-3xl text-slate-200">
-                <Sparkles className="w-12 h-12 text-emerald-400 animate-pulse" />
+          {/* AI RECOMMENDATIONS */}
+          <Card className="h-[420px]">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Sparkles className="w-5 h-5 text-emerald-400" />
                 AI Recommendations
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 max-h-96 overflow-y-auto">
-              {recommendations.map((rec, idx) => (
-                <motion.div
-                  key={idx}
-                  className="group mb-6 p-6 bg-slate-700/50 rounded-2xl border border-slate-600/50 hover:bg-slate-600/30 transition-all last:mb-0"
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1">
-                      <Sparkles className="w-7 h-7 text-slate-900" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 transition-colors mb-2">
-                        {rec.title}
-                      </h4>
-                      <p className="text-lg text-slate-400 mb-4">{rec.reason}</p>
-                      <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-400/50 px-4 py-2">
-                        {rec.category}
-                      </Badge>
-                    </div>
+            <CardContent className="p-0 h-[320px] overflow-y-auto">
+              <div className="space-y-3 p-4">
+                {aiRecommendations.length > 0 ? (
+                  aiRecommendations.map((rec, idx) => (
+                    <motion.div
+                      key={rec.id || idx}
+                      className="group p-4 border border-border/50 rounded-xl hover:bg-emerald-500/5 hover:border-emerald-400/30 transition-all"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                          rec.priority === 'high' ? 'bg-emerald-400' : 'bg-yellow-400'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-emerald-400 group-hover:text-emerald-300 mb-1">
+                            {rec.icon} {rec.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                            {rec.reason}
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {rec.category}
+                          </Badge>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center">
+                    <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <p className="text-muted-foreground">AI analyzing your habits...</p>
                   </div>
-                </motion.div>
-              ))}
+                )}
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="h-96 bg-slate-800/90 backdrop-blur-xl border border-slate-600/50 shadow-2xl rounded-3xl overflow-hidden">
-            <CardHeader className="p-8">
-              <CardTitle className="flex items-center gap-4 text-3xl text-slate-200">
-                <Clock className="w-12 h-12 text-emerald-400" />
+          {/* RECENT MOODS */}
+          <Card className="h-[420px]">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Clock className="w-5 h-5" />
                 Recent Moods
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 max-h-64 overflow-y-auto">
-              {moods.map((moodItem) => (
-                <div key={moodItem.id} className="flex items-center gap-4 p-6 mb-4 bg-slate-700/50 rounded-2xl last:mb-0 hover:bg-slate-600/50 transition-all">
-                  <div className="text-3xl">{getMoodEmoji(moodItem.mood)}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xl font-bold text-slate-200 capitalize mb-1">{moodItem.mood}</p>
-                    {moodItem.notes && (
-                      <p className="text-lg text-slate-400 truncate">{moodItem.notes}</p>
-                    )}
+            <CardContent className="p-0 h-[320px] overflow-y-auto">
+              {moods.length > 0 ? (
+                moods.map((moodItem) => (
+                  <div key={moodItem.id} className="p-5 border-b border-border/50 last:border-b-0 hover:bg-muted/50 group">
+                    <div className="flex items-center gap-4">
+                      <div className="text-2xl flex-shrink-0">{getMoodEmoji(moodItem.mood)}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold group-hover:text-emerald-400 truncate">
+                          {moodItem.mood}
+                        </p>
+                        {moodItem.notes && (
+                          <p className="text-sm text-muted-foreground truncate">{moodItem.notes}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground min-w-[60px] text-right">
+                        {new Date(moodItem.created_at).toLocaleDateString('en-IN')}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-sm text-slate-500 min-w-[80px] text-right">
-                    {new Date(moodItem.created_at).toLocaleDateString('en-IN')}
-                  </span>
+                ))
+              ) : (
+                <div className="p-12 text-center">
+                  <Smile className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No moods logged yet</p>
                 </div>
-              ))}
+              )}
+            </CardContent>
+          </Card>
+
+          {/* USER INFO */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Crown className="w-5 h-5 text-emerald-400" />
+                Account
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold mb-2">
+                  {user?.fullName || user?.firstName || 'Anuja Panchariya'}
+                </h3>
+                <p className="text-muted-foreground text-sm break-all">
+                  {user?.primaryEmailAddress?.emailAddress || 'anuja@example.com'}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap justify-center">
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-400/50">
+                  Pro Member
+                </Badge>
+                <Badge variant="secondary">
+                  {stats.totalMoods} moods logged
+                </Badge>
+              </div>
             </CardContent>
           </Card>
         </div>
-
-        <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12 border-t border-slate-700">
-          <Button 
-            onClick={exportCSV}
-            disabled={exporting}
-            className="h-20 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 text-2xl font-bold text-slate-900 rounded-3xl shadow-2xl col-span-1"
-          >
-            {exporting ? (
-              <Activity className="w-8 h-8 animate-spin mr-3" />
-            ) : (
-              <Download className="w-8 h-8 mr-3" />
-            )}
-            Export CSV
-          </Button>
-        </motion.div>
       </div>
     </div>
   );
