@@ -296,7 +296,7 @@ export default function ProfilePage() {
                       value={moodNotes}
                       onChange={(e) => setMoodNotes(e.target.value)}
                       placeholder="What's on your mind today? (optional)"
-                      className={`min-h-[140px] resize-none rounded-3xl border-3 shadow-2xl text-lg py-8 px-8 backdrop-blur-xl ${
+                      className={`min-h-[140px] resize-none rounded-xl border-3 shadow-2xl text-lg py-8 px-8 backdrop-blur-xl ${
                         isDarkMode 
                           ? 'border-emerald-400/50 bg-black/80 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/40' 
                           : 'border-emerald-400/30 bg-white/80 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-400/30'
