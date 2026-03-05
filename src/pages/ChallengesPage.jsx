@@ -8,39 +8,33 @@ import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { api, setAuthToken } from "../lib/api";
 import { toast } from "sonner";
-import { useTheme } from '../contexts/ThemeContext'; // ✅ DASHBOARD THEME
 
 export default function ChallengesPage() {
   const { getToken, userId } = useAuth();
-  const { theme, toggleTheme } = useTheme(); // ✅ THEME HOOK
+  const [isDark, setIsDark] = useState(true); // ✅ LOCAL STATE - NO CONTEXT!
   const [activeTab, setActiveTab] = useState('challenges');
   const [challenges, setChallenges] = useState([]);
   const [myChallenges, setMyChallenges] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newChallenge, setNewChallenge] = useState({
-    title: '',
-    description: '',
-    duration: 30,
-    goal: ''
+    title: '', description: '', duration: 30, goal: ''
   });
 
-  const isDark = theme === 'dark';
+  // ✅ THEME COLORS (DARK BY DEFAULT - LIKE DASHBOARD)
   const bgGradient = isDark 
     ? "from-slate-900 via-slate-800 to-slate-900" 
-    : "from-orange-50 via-amber-50 to-orange-50";
+    : "from-gray-50 via-white to-gray-50";
   const cardBg = isDark 
-    ? "bg-slate-800/80 backdrop-blur-xl border border-slate-600/50" 
-    : "bg-white/90 backdrop-blur-xl border border-orange-200/50 shadow-xl";
+    ? "bg-slate-800/80 backdrop-blur-xl border border-slate-600/50 shadow-2xl" 
+    : "bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl";
   const textPrimary = isDark ? 'text-slate-100' : 'text-gray-900';
   const textSecondary = isDark ? 'text-slate-400' : 'text-gray-600';
-  const accentBg = isDark ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-orange-500 to-orange-600';
-  const accentText = isDark ? 'text-slate-900' : 'text-white';
+  const accentBg = isDark ? 'from-emerald-500 to-emerald-600' : 'from-orange-500 to-orange-600';
+  const accentBorder = isDark ? 'border-emerald-400/50' : 'border-orange-400/50';
 
   const loadChallengesData = useCallback(async () => {
     if (!userId) return;
-    
     try {
       setLoading(true);
       const token = await getToken();
@@ -53,7 +47,6 @@ export default function ChallengesPage() {
       
       setChallenges(Array.isArray(challengesRes.data) ? challengesRes.data : []);
       setMyChallenges(Array.isArray(myChallengesRes.data) ? myChallengesRes.data : []);
-      
     } catch (error) {
       console.error("Challenges API error:", error);
     } finally {
@@ -83,10 +76,9 @@ export default function ChallengesPage() {
       if (token) setAuthToken(token);
       
       await api.post("/api/challenges", newChallenge);
-      toast.success("🎉 Challenge created! Share with friends!");
-      
+      toast.success("🎉 Challenge created & LIVE!");
       setNewChallenge({ title: '', description: '', duration: 30, goal: '' });
-      loadChallengesData(); // ✅ RELOAD - NEW CHALLENGE SHOW!
+      loadChallengesData(); // ✅ INSTANT RELOAD!
     } catch (error) {
       toast.error("Failed to create challenge");
     } finally {
@@ -103,182 +95,170 @@ export default function ChallengesPage() {
       <div className={`min-h-screen flex items-center justify-center ${bgGradient}`}>
         <motion.div 
           animate={{ rotate: 360 }} 
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className={`w-20 h-20 border-4 ${isDark ? 'border-slate-600 border-t-emerald-500' : 'border-orange-300 border-t-orange-500'} rounded-full shadow-2xl`} 
+          transition={{ duration: 1, repeat: Infinity }}
+          className={`w-20 h-20 border-4 ${isDark ? 'border-slate-600 border-t-emerald-500' : 'border-gray-300 border-t-orange-500'} rounded-full shadow-2xl`} 
         />
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${bgGradient} p-6 md:p-8 pt-20`}>
-      {/* ✅ DASHBOARD TOP BAR (EXACT SAME) */}
-      <div className="max-w-7xl mx-auto flex justify-between items-center mb-8">
-        <div>
-          <h1 className={`text-4xl md:text-5xl lg:text-6xl font-light tracking-tight ${textPrimary} mb-2 drop-shadow-2xl`}>
-            Challenges
-          </h1>
-          <p className={`text-lg md:text-xl ${textSecondary} bg-opacity-80 px-4 py-2 rounded-2xl ${isDark ? 'bg-slate-800/50 border border-slate-600/50' : 'bg-white/80 border border-orange-200/50'}`}>
-            Compete • Win badges • Build streaks together
-          </p>
+    <div className={`min-h-screen ${bgGradient} p-4 sm:p-6 lg:p-8 pt-20`}>
+      {/* DASHBOARD HEADER */}
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 lg:gap-8 mb-8">
+          <div>
+            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight ${textPrimary} mb-2 drop-shadow-2xl`}>
+              Challenges
+            </h1>
+            <p className={`text-lg sm:text-xl ${textSecondary} px-4 py-2 rounded-2xl ${isDark ? 'bg-slate-800/50 border border-slate-600/50' : 'bg-white/80 border border-gray-200'}`}>
+              Compete • Win badges • Build streaks together
+            </p>
+          </div>
+          
+          {/* THEME + CREATE BUTTONS */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button 
+              onClick={() => setIsDark(!isDark)}
+              className={`p-3 rounded-2xl shadow-lg transition-all ${isDark ? 'bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50' : 'bg-orange-500/90 hover:bg-orange-600 text-white border border-orange-400/50'}`}
+              size="sm"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </Button>
+            <Button 
+              className={`h-14 px-8 bg-gradient-to-r ${accentBg} hover:from-emerald-600 hover:to-emerald-700 ${isDark ? 'text-slate-900' : 'text-white'} font-bold rounded-2xl shadow-2xl border ${accentBorder} text-lg`}
+              onClick={() => document.getElementById('create-modal').showModal()}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create Challenge
+            </Button>
+          </div>
         </div>
-        
-        {/* THEME TOGGLE + CREATE BUTTON */}
-        <div className="flex items-center gap-4">
-          <Button 
-            onClick={toggleTheme}
-            className={`p-3 rounded-2xl ${isDark ? 'bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50' : 'bg-orange-500/80 hover:bg-orange-600/80 border border-orange-400/50'} transition-all`}
-          >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </Button>
-          <Button 
-            className={`h-14 px-8 ${accentBg} hover:from-emerald-600 hover:to-emerald-700 ${accentText} font-bold rounded-2xl shadow-2xl text-lg border ${isDark ? 'border-emerald-400/50' : 'border-orange-400/50'}`}
-            onClick={() => document.getElementById('create-modal').showModal()}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Create
-          </Button>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        
-        {/* 🏆 ACTIVE CHALLENGES CARD */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="lg:col-span-1"
-        >
-          <Card className={`${cardBg} shadow-2xl hover:shadow-emerald-500/20 transition-all h-[500px] lg:h-[600px] overflow-hidden`}>
-            <CardHeader className={`p-6 ${isDark ? 'bg-slate-900/50' : 'bg-orange-500/10'}`}>
+        {/* 2-COLUMN DASHBOARD GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+          
+          {/* 🏆 CHALLENGES CARD */}
+          <Card className={`${cardBg} h-[480px] lg:h-[580px] hover:shadow-emerald-500/25 transition-all overflow-hidden`}>
+            <CardHeader className={`p-6 ${isDark ? 'bg-slate-900/30' : 'bg-gradient-to-r from-orange-500/10 to-orange-400/10'}`}>
               <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 ${isDark ? 'bg-gradient-to-br from-yellow-400 to-orange-400' : 'bg-gradient-to-br from-orange-500 to-orange-600'} rounded-2xl flex items-center justify-center shadow-2xl`}>
+                <div className={`w-14 h-14 bg-gradient-to-br ${isDark ? 'from-yellow-400 to-orange-400' : 'from-orange-500 to-orange-600'} rounded-2xl flex items-center justify-center shadow-2xl`}>
                   <Trophy className={`w-7 h-7 ${isDark ? 'text-slate-900' : 'text-white'}`} />
                 </div>
                 <div>
                   <CardTitle className={`text-2xl ${textPrimary} font-bold`}>Live Challenges</CardTitle>
-                  <p className={`${isDark ? 'text-emerald-400' : 'text-orange-500'} text-lg font-semibold`}>
+                  <p className={`${isDark ? 'text-emerald-400' : 'text-orange-500'} font-semibold text-lg`}>
                     {challenges.length} active
                   </p>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900/50">
+            <CardContent className="p-6 max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600/50 scrollbar-track-transparent">
               <AnimatePresence>
-                {challenges.length > 0 ? (
-                  challenges.map((challenge, idx) => (
-                    <motion.div
-                      key={challenge.id || idx}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className={`p-6 rounded-2xl mb-4 transition-all border ${isDark ? 'bg-slate-700/50 border-slate-600/50 hover:bg-emerald-500/10' : 'bg-orange-50/80 border-orange-200/50 hover:bg-orange-100/80'} group`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <h3 className={`text-xl font-bold ${textPrimary} mb-2 group-hover:text-emerald-400 transition-colors`}>
-                            {challenge.title}
-                          </h3>
-                          <p className={`${textSecondary} text-sm mb-3 line-clamp-2`}>{challenge.description}</p>
-                          <div className="flex items-center gap-4 mb-3 text-sm">
-                            <span className={`${isDark ? 'text-emerald-400' : 'text-orange-500'}`}>
-                              <Users className="w-4 h-4 inline mr-1" />
-                              {challenge.participants_count || Math.floor(Math.random() * 20) + 5} joined
-                            </span>
-                            <span className={textSecondary}>
-                              <Zap className="w-4 h-4 inline mr-1" />
-                              {challenge.duration || 30} days
-                            </span>
-                          </div>
-                          <div className="w-full bg-slate-700/30 rounded-xl h-3 overflow-hidden">
-                            <div 
-                              className={`h-3 ${accentBg} shadow-lg rounded-lg transition-all`}
-                              style={{ width: `${challenge.progress || Math.random() * 70 + 20}%` }}
-                            />
-                          </div>
-                        </div>
-                        <Button 
-                          onClick={() => joinChallenge(challenge.id)}
-                          className={`h-12 px-6 ${accentBg} hover:from-emerald-600 hover:to-emerald-700 ${accentText} font-bold rounded-xl shadow-xl whitespace-nowrap flex items-center gap-2`}
-                        >
-                          <Flame className="w-4 h-4" />
-                          Join
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
+                {challenges.length > 0 ? challenges.map((challenge, idx) => (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-20"
+                    key={challenge.id || idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-5 rounded-2xl mb-4 border transition-all group ${isDark ? 'bg-slate-700/60 border-slate-600/50 hover:bg-emerald-500/10' : 'bg-orange-50/90 border-orange-200/50 hover:bg-orange-100 shadow-sm'}`}
                   >
-                    <Trophy className={`w-20 h-20 mx-auto mb-6 ${isDark ? 'text-slate-600' : 'text-orange-300'}`} />
-                    <p className="text-2xl font-bold mb-2">No Active Challenges</p>
-                    <p className={textSecondary}>Create the first one!</p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-xl font-bold ${textPrimary} mb-2 line-clamp-1 group-hover:text-emerald-400 transition-all`}>
+                          {challenge.title}
+                        </h3>
+                        <p className={`${textSecondary} text-sm mb-3 line-clamp-2`}>{challenge.description}</p>
+                        <div className="flex items-center gap-4 mb-3 text-xs">
+                          <span className={`${isDark ? 'text-emerald-400' : 'text-orange-500'}`}>
+                            <Users className="w-4 h-4 inline mr-1" />
+                            {challenge.participants_count || Math.floor(Math.random() * 15) + 3} joined
+                          </span>
+                          <span className={textSecondary}>
+                            <Zap className="w-4 h-4 inline mr-1" />
+                            {challenge.duration || 30} days
+                          </span>
+                        </div>
+                        <div className="w-full h-2.5 bg-slate-700/40 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-2.5 bg-gradient-to-r ${accentBg} shadow-lg rounded-full transition-all`}
+                            style={{ width: `${challenge.progress || Math.random() * 60 + 25}%` }}
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => joinChallenge(challenge.id)}
+                        size="sm"
+                        className={`h-11 px-4 bg-gradient-to-r ${accentBg} hover:from-emerald-600 hover:to-emerald-700 ${isDark ? 'text-slate-900' : 'text-white'} font-semibold rounded-xl shadow-lg whitespace-nowrap flex items-center gap-2 border ${accentBorder}`}
+                      >
+                        <Flame className="w-4 h-4" />
+                        Join
+                      </Button>
+                    </div>
+                  </motion.div>
+                )) : (
+                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16">
+                    <Trophy className={`w-20 h-20 mx-auto mb-6 ${isDark ? 'text-slate-600 opacity-50' : 'text-orange-400'}`} />
+                    <p className={`text-2xl font-bold mb-2 ${textPrimary}`}>No Challenges Yet</p>
+                    <p className={textSecondary}>Be the first to create one!</p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </CardContent>
           </Card>
-        </motion.div>
 
-        {/* 👑 LEADERBOARD / MY CHALLENGES */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="lg:col-span-1"
-        >
-          <Card className={`${cardBg} shadow-2xl hover:shadow-emerald-500/20 transition-all h-[500px] lg:h-[600px] overflow-hidden`}>
-            <CardHeader className={`p-6 ${isDark ? 'bg-slate-900/50' : 'bg-orange-500/10'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-14 h-14 ${isDark ? 'bg-gradient-to-br from-yellow-500 to-amber-500' : 'bg-gradient-to-br from-orange-500 to-orange-600'} rounded-2xl flex items-center justify-center shadow-2xl`}>
+          {/* 👑 LEADERBOARD CARD */}
+          <Card className={`${cardBg} h-[480px] lg:h-[580px] hover:shadow-emerald-500/25 transition-all overflow-hidden`}>
+            <CardHeader className={`p-6 ${isDark ? 'bg-slate-900/30' : 'bg-gradient-to-r from-orange-500/10 to-orange-400/10'}`}>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 bg-gradient-to-br ${isDark ? 'from-yellow-500 to-amber-500' : 'from-orange-500 to-orange-600'} rounded-2xl flex items-center justify-center shadow-2xl`}>
                     <Crown className={`w-7 h-7 ${isDark ? 'text-slate-900' : 'text-white'}`} />
                   </div>
                   <div>
                     <CardTitle className={`text-2xl ${textPrimary} font-bold`}>
-                      {activeTab === 'challenges' ? 'Leaderboard' : 'My Challenges'}
+                      {activeTab === 'challenges' ? '🏆 Leaderboard' : '🎯 My Challenges'}
                     </CardTitle>
-                    <p className={`${isDark ? 'text-emerald-400' : 'text-orange-500'} text-lg font-semibold`}>
-                      {activeTab === 'challenges' ? 'Top competitors' : `${myChallenges.length} active`}
+                    <p className={`${isDark ? 'text-emerald-400' : 'text-orange-500'} font-semibold text-lg`}>
+                      {activeTab === 'challenges' ? 'Live rankings' : `${myChallenges.length} active`}
                     </p>
                   </div>
                 </div>
                 <Button
                   variant="ghost"
-                  className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-orange-500/10'}`}
+                  size="sm"
+                  className={`p-2 rounded-xl ${isDark ? 'hover:bg-slate-700/50 text-slate-400 hover:text-slate-200' : 'hover:bg-orange-500/10 text-gray-600 hover:text-orange-600'}`}
                   onClick={() => setActiveTab(activeTab === 'challenges' ? 'my' : 'challenges')}
                 >
                   {activeTab === 'challenges' ? 'My Challenges' : 'Leaderboard'}
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className={`p-6 ${isDark ? 'bg-slate-900/30' : 'bg-orange-50/50'}`}>
+            <CardContent className={`p-6 ${isDark ? 'bg-slate-900/20' : 'bg-orange-50/50'}`}>
               {activeTab === 'challenges' ? (
                 <div className="space-y-3">
-                  {[...Array(5)].map((_, idx) => (
+                  {[...Array(6)].map((_, idx) => (
                     <motion.div
                       key={idx}
                       className={`flex items-center justify-between p-4 rounded-xl transition-all ${
                         idx === 0 
-                          ? `${isDark ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/50' : 'bg-gradient-to-r from-orange-500/20 to-orange-600/20 border-orange-400/50'} shadow-2xl` 
-                          : `${isDark ? 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50' : 'bg-white/50 border-orange-200/50 hover:bg-orange-50/80'}`
+                          ? `bg-gradient-to-r ${isDark ? 'from-yellow-500/20 to-orange-500/20 border-yellow-400/50 shadow-2xl shadow-yellow-500/25' : 'from-orange-500/20 to-orange-600/20 border-orange-400/50 shadow-2xl shadow-orange-500/25'}` 
+                          : `${isDark ? 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-600/50' : 'bg-white/60 border-gray-200 hover:bg-orange-50/70 shadow-sm'}`
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl shadow-xl ${
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shadow-xl ${
                           idx === 0 
                             ? `${isDark ? 'bg-gradient-to-br from-yellow-400 to-orange-400 text-slate-900' : 'bg-gradient-to-br from-orange-500 to-orange-600 text-white'}` 
-                            : `${isDark ? 'bg-slate-600/50 text-slate-200' : 'bg-orange-500/80 text-white'}`
+                            : `${isDark ? 'bg-slate-600/70 text-slate-200 border-2 border-slate-500/50' : 'bg-orange-500/90 text-white border-2 border-orange-400/50'}`
                         }`}>
                           #{idx + 1}
                         </div>
-                        <div>
-                          <p className={`font-bold ${textPrimary}`}>Anuja Panchariya</p>
-                          <p className={textSecondary}>87% complete</p>
+                        <div className="min-w-0">
+                          <p className={`font-bold text-sm truncate ${textPrimary}`}>{['Anuja Panchariya', 'Rahul Sharma', 'Priya Patel', 'Amit Kumar', 'Sneha R.', 'Vikram S.'][idx] || 'User'}</p>
+                          <p className={`${textSecondary} text-xs`}>{Math.floor(Math.random() * 30 + 70)}% complete</p>
                         </div>
                       </div>
-                      <div className={`text-2xl ${isDark ? 'text-emerald-400' : 'text-orange-500'}`}>
+                      <div className={`text-xl ${isDark ? 'text-emerald-400' : 'text-orange-500'}`}>
                         🔥
                       </div>
                     </motion.div>
@@ -286,32 +266,29 @@ export default function ChallengesPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {myChallenges.length > 0 ? (
-                    myChallenges.map((challenge, idx) => (
-                      <div key={challenge.id || idx} className={`p-5 rounded-2xl border ${isDark ? 'bg-emerald-500/10 border-emerald-400/30' : 'bg-orange-500/10 border-orange-400/30'} shadow-xl`}>
-                        <h3 className={`text-xl font-bold ${textPrimary} mb-2`}>{challenge.title}</h3>
-                        <div className="w-full bg-slate-700/30 rounded-xl h-3 mb-2 overflow-hidden">
-                          <div 
-                            className={`h-3 ${accentBg} shadow-lg rounded-lg`}
-                            style={{ width: `${challenge.progress || 45}%` }}
-                          />
-                        </div>
-                        <p className={`${isDark ? 'text-emerald-400' : 'text-orange-500'} font-semibold`}>
-                          {challenge.progress || 45}% complete
-                        </p>
+                  {myChallenges.length > 0 ? myChallenges.map((challenge, idx) => (
+                    <div key={challenge.id || idx} className={`p-5 rounded-2xl border shadow-xl ${isDark ? 'bg-emerald-500/10 border-emerald-400/40 hover:bg-emerald-500/20' : 'bg-orange-500/10 border-orange-400/40 hover:bg-orange-500/20'}`}>
+                      <h3 className={`text-lg font-bold ${textPrimary} mb-2`}>{challenge.title}</h3>
+                      <div className="w-full h-2.5 bg-slate-700/40 rounded-full mb-2 overflow-hidden">
+                        <div className={`h-2.5 bg-gradient-to-r ${accentBg} shadow-lg rounded-full`} style={{ width: `${challenge.progress || 45}%` }} />
                       </div>
-                    ))
-                  ) : (
+                      <p className={`${isDark ? 'text-emerald-400' : 'text-orange-500'} font-semibold text-sm`}>
+                        {challenge.progress || 45}% complete
+                      </p>
+                    </div>
+                  )) : (
                     <div className="text-center py-16">
-                      <div className={`w-20 h-20 ${isDark ? 'bg-slate-700/50' : 'bg-orange-500/20'} rounded-2xl flex items-center justify-center mx-auto mb-6 border-2 ${isDark ? 'border-slate-600/50' : 'border-orange-400/30'}`}>
+                      <div className={`w-20 h-20 ${isDark ? 'bg-slate-700/50 border-2 border-slate-600/50' : 'bg-orange-500/20 border-2 border-orange-400/30'} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}>
                         <Plus className={`w-8 h-8 ${isDark ? 'text-slate-500' : 'text-orange-500'}`} />
                       </div>
-                      <h3 className="text-2xl font-bold mb-2">No Challenges Yet</h3>
+                      <h3 className={`text-xl font-bold mb-3 ${textPrimary}`}>No Challenges Yet</h3>
+                      <p className={textSecondary}>Join or create your first challenge!</p>
                       <Button 
-                        className={`h-14 px-8 mt-4 ${accentBg} ${accentText} font-bold rounded-2xl shadow-2xl`}
+                        className={`h-12 px-8 mt-6 bg-gradient-to-r ${accentBg} ${isDark ? 'text-slate-900' : 'text-white'} font-bold rounded-xl shadow-xl border ${accentBorder}`}
                         onClick={() => document.getElementById('create-modal').showModal()}
                       >
-                        Create First Challenge
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create First
                       </Button>
                     </div>
                   )}
@@ -319,29 +296,29 @@ export default function ChallengesPage() {
               )}
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       </div>
 
-      {/* ✅ CREATE MODAL (DASHBOARD STYLE) */}
-      <dialog id="create-modal" className={`backdrop:bg-black/50 p-4 sm:p-8 ${isDark ? 'backdrop:bg-slate-900/80' : 'backdrop:bg-orange-500/5'}`}>
+      {/* CREATE MODAL */}
+      <dialog id="create-modal" className={`${isDark ? 'backdrop:bg-slate-900/80' : 'backdrop:bg-black/50'} p-4 sm:p-8`}>
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className={`${cardBg} max-w-2xl mx-auto p-8 sm:p-10 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto`}
+          className={`${cardBg} max-w-2xl mx-auto p-8 lg:p-10 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto`}
         >
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 ${accentBg} rounded-2xl flex items-center justify-center shadow-2xl`}>
-                <Plus className={`w-8 h-8 ${accentText}`} />
+              <div className={`w-16 h-16 bg-gradient-to-r ${accentBg} rounded-2xl flex items-center justify-center shadow-2xl`}>
+                <Plus className={`w-8 h-8 ${isDark ? 'text-slate-900' : 'text-white'}`} />
               </div>
               <div>
-                <h2 className={`text-3xl ${textPrimary} font-bold`}>Create Challenge</h2>
-                <p className={`${isDark ? 'text-emerald-400' : 'text-orange-500'} text-lg font-semibold`}>Challenge friends to build better habits!</p>
+                <h2 className={`text-3xl font-bold ${textPrimary}`}>Create Challenge</h2>
+                <p className={`${isDark ? 'text-emerald-400' : 'text-orange-500'} text-xl font-semibold`}>Challenge friends together!</p>
               </div>
             </div>
             <Button 
               variant="ghost" 
-              className={`text-${isDark ? 'slate-400' : 'gray-500'} hover:text-slate-200 h-12 w-12 rounded-2xl p-0`}
+              className={`h-12 w-12 p-0 rounded-2xl ${isDark ? 'text-slate-400 hover:bg-slate-700/50' : 'text-gray-500 hover:bg-gray-200'}`}
               onClick={() => document.getElementById('create-modal').close()}
             >
               ×
@@ -352,69 +329,58 @@ export default function ChallengesPage() {
             <div>
               <label className={`block text-lg font-bold ${textPrimary} mb-3`}>Challenge Title</label>
               <Input
-                placeholder="e.g., Hydrate with me for 30 days"
+                placeholder="e.g., 'Hydrate with me for 30 days'"
                 value={newChallenge.title}
                 onChange={(e) => setNewChallenge({...newChallenge, title: e.target.value})}
-                className={`h-16 text-lg ${isDark ? 'bg-slate-700/50 border-slate-500/50 text-slate-100 placeholder-slate-400' : 'bg-white/80 border-orange-200/50 text-gray-900 placeholder-gray-500'} rounded-2xl backdrop-blur-sm`}
+                className={`h-16 text-lg rounded-2xl backdrop-blur-sm ${isDark ? 'bg-slate-700/60 border-slate-500/50 text-slate-100 placeholder-slate-400' : 'bg-white/90 border-gray-200 text-gray-900 placeholder-gray-500 shadow-sm'}`}
               />
             </div>
-
             <div>
               <label className={`block text-lg font-bold ${textPrimary} mb-3`}>Description</label>
               <Textarea
-                placeholder="Tell your friends why they should join..."
+                placeholder="What habit will you conquer together?"
                 value={newChallenge.description}
                 onChange={(e) => setNewChallenge({...newChallenge, description: e.target.value})}
-                className={`h-32 text-lg ${isDark ? 'bg-slate-700/50 border-slate-500/50 text-slate-100 placeholder-slate-400' : 'bg-white/80 border-orange-200/50 text-gray-900 placeholder-gray-500'} rounded-2xl backdrop-blur-sm`}
-                rows={4}
+                className={`h-28 text-lg rounded-2xl backdrop-blur-sm resize-vertical ${isDark ? 'bg-slate-700/60 border-slate-500/50 text-slate-100 placeholder-slate-400' : 'bg-white/90 border-gray-200 text-gray-900 placeholder-gray-500 shadow-sm'}`}
+                rows={3}
               />
             </div>
-
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className={`block text-lg font-semibold ${textSecondary} mb-2`}>Duration (days)</label>
-                <Input
-                  type="number"
-                  value={newChallenge.duration}
-                  onChange={(e) => setNewChallenge({...newChallenge, duration: parseInt(e.target.value)})}
-                  className={`h-14 text-lg ${isDark ? 'bg-slate-700/50 border-slate-500/50' : 'bg-white/80 border-orange-200/50'} rounded-2xl`}
-                  min={7}
-                  max={90}
+                <label className={`block text-sm font-semibold ${textSecondary} mb-2`}>Duration</label>
+                <Input type="number" value={newChallenge.duration} min={7} max={90}
+                  onChange={(e) => setNewChallenge({...newChallenge, duration: parseInt(e.target.value) || 30})}
+                  className={`h-14 text-lg rounded-xl ${isDark ? 'bg-slate-700/50 border-slate-500/30' : 'bg-white/80 border-gray-200 shadow-sm'}`}
                 />
+                <span className="text-xs text-slate-500 mt-1 block">days</span>
               </div>
               <div>
-                <label className={`block text-lg font-semibold ${textSecondary} mb-2`}>Daily Goal</label>
-                <Input
-                  placeholder="e.g., 8 glasses water"
+                <label className={`block text-sm font-semibold ${textSecondary} mb-2`}>Daily Goal</label>
+                <Input placeholder="e.g., 8 glasses water"
                   value={newChallenge.goal}
                   onChange={(e) => setNewChallenge({...newChallenge, goal: e.target.value})}
-                  className={`h-14 text-lg ${isDark ? 'bg-slate-700/50 border-slate-500/50' : 'bg-white/80 border-orange-200/50'} rounded-2xl`}
+                  className={`h-14 text-lg rounded-xl ${isDark ? 'bg-slate-700/50 border-slate-500/30' : 'bg-white/80 border-gray-200 shadow-sm'}`}
                 />
               </div>
             </div>
-
-            <div className="flex gap-4 pt-6 border-t border-slate-200/20">
-              <Button 
-                type="submit" 
-                disabled={creating || !newChallenge.title.trim()}
-                className={`flex-1 h-16 ${accentBg} hover:from-emerald-600 hover:to-emerald-700 ${accentText} font-bold text-lg rounded-2xl shadow-2xl border ${isDark ? 'border-emerald-400/50' : 'border-orange-400/50'} disabled:opacity-50`}
+            <div className={`flex gap-4 pt-6 border-t ${isDark ? 'border-slate-700/50' : 'border-gray-200/50'}`}>
+              <Button type="submit" disabled={creating || !newChallenge.title.trim()}
+                className={`flex-1 h-14 bg-gradient-to-r ${accentBg} hover:from-emerald-600 hover:to-emerald-700 ${isDark ? 'text-slate-900' : 'text-white'} font-bold text-lg rounded-2xl shadow-2xl border ${accentBorder} disabled:opacity-50 transition-all`}
               >
                 {creating ? (
                   <>
-                    <div className="w-6 h-6 border-2 border-slate-900 border-t-emerald-500 rounded-full animate-spin mr-3" />
-                    Creating...
+                    <div className="w-5 h-5 border-2 border-slate-900 border-t-emerald-500 rounded-full animate-spin mr-2" />
+                    Launching...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-6 h-6 mr-3" />
+                    <Sparkles className="w-5 h-5 mr-2" />
                     Launch Challenge
                   </>
                 )}
               </Button>
-              <Button 
-                type="button"
-                variant="outline"
-                className={`h-16 px-8 border-${isDark ? 'slate-500/50' : 'orange-300/50'} ${textSecondary} hover:bg-${isDark ? 'slate-700/50' : 'orange-500/10'} rounded-2xl`}
+              <Button type="button" variant="outline"
+                className={`h-14 px-8 ${isDark ? 'border-slate-500/50 text-slate-400 hover:bg-slate-700/50' : 'border-gray-300 text-gray-600 hover:bg-gray-100'} rounded-2xl font-medium`}
                 onClick={() => document.getElementById('create-modal').close()}
               >
                 Cancel
