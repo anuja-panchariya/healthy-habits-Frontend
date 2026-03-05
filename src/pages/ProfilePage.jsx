@@ -21,7 +21,6 @@ export default function ProfilePage() {
   const [stats, setStats] = useState({ totalMoods: 0, greatPercentage: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔥 CLEAN AI INSIGHT
   const FALLBACK_AI_INSIGHT = {
     insight: "Low hydration detected - 30% mood impact",
     recommendation: "Drink 8 glasses water daily for instant focus boost",
@@ -122,10 +121,10 @@ export default function ProfilePage() {
             <div className="w-20 h-20 bg-slate-700/50 rounded-2xl"></div>
           </div>
           <div className="space-y-6">
-            <Card className="h-[280px]"><CardHeader><div className="h-8 w-48 bg-slate-700/50 rounded"></div></CardHeader><CardContent className="p-8"><div className="space-y-4"><div className="h-20 w-full bg-slate-700/30 rounded-xl"></div><div className="flex gap-4"><div className="h-6 w-24 bg-slate-600/50 rounded-full"></div></div></div></CardContent></Card>
+            <Card className="h-[280px]"><CardHeader><div className="h-8 w-48 bg-slate-700/50 rounded"></div></CardHeader><CardContent className="p-8"><div className="space-y-4"><div className="h-20 w-full bg-slate-700/30 rounded-xl"></div></div></CardContent></Card>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="h-[500px]"><CardHeader><div className="h-7 w-32 bg-slate-700/50 rounded"></div></CardHeader><CardContent className="p-8 space-y-6"><div className="h-16 bg-slate-700/50 rounded-xl"></div><div className="h-32 bg-slate-700/50 rounded-xl"></div><div className="h-14 bg-slate-700/50 rounded-xl"></div></CardContent></Card>
-              <Card className="h-[500px]"><CardHeader><div className="h-7 w-28 bg-slate-700/50 rounded"></div></CardHeader><CardContent className="p-8 space-y-4"><div className="p-6 bg-slate-700/30 rounded-xl"><div className="flex gap-4"><div className="w-12 h-12 bg-slate-700/50 rounded-xl"></div><div className="space-y-2 flex-1"><div className="h-5 w-32 bg-slate-700/50 rounded"></div></div></div></div></CardContent></Card>
+              <Card className="h-[500px]"><CardHeader><div className="h-7 w-28 bg-slate-700/50 rounded"></div></CardHeader><CardContent className="p-8 space-y-4"><div className="p-6 bg-slate-700/30 rounded-xl"><div className="flex gap-4"><div className="w-12 h-12 bg-slate-700/50 rounded-xl"></div></div></div></CardContent></Card>
             </div>
           </div>
         </div>
@@ -156,24 +155,24 @@ export default function ProfilePage() {
         </motion.div>
 
         <div className="space-y-8">
-          {/* 🔥 BIG AI WELLNESS COACH */}
+          {/* ✅ FIXED AI WELLNESS COACH - NO OVERFLOW */}
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="h-[320px] shadow-2xl border-emerald-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl">
-              <CardHeader className="pb-6">
+            <Card className="shadow-2xl border border-emerald-400/40 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl overflow-hidden">
+              <CardHeader className="pb-8 px-10 pt-10">
                 <CardTitle className="flex items-center gap-4 text-3xl font-black tracking-tight">
-                  <Sparkles className="w-10 h-10 text-emerald-400 drop-shadow-2xl animate-pulse" />
+                  <Sparkles className="w-12 h-12 text-emerald-400 drop-shadow-2xl animate-pulse" />
                   AI Wellness Coach
                 </CardTitle>
               </CardHeader>
-              <CardContent className="px-10 pb-10 pt-0">
-                <div className="flex items-start gap-6">
-                  <div className="w-5 h-5 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full mt-1 flex-shrink-0 shadow-xl animate-ping"></div>
+              <CardContent className="px-10 pb-12 pt-0">
+                <div className="flex items-start gap-6 max-w-full">
+                  <div className="w-6 h-6 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full mt-1 flex-shrink-0 shadow-xl animate-ping"></div>
                   <div className="flex-1 min-w-0 space-y-6">
-                    <div className="flex items-center gap-4">
-                      <Badge className="bg-emerald-500/30 text-emerald-300 border-emerald-400/50 font-bold px-4 py-2 shadow-lg text-lg">
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <Badge className="bg-emerald-500/30 text-emerald-300 border-emerald-400/50 font-bold px-5 py-2 shadow-lg text-lg whitespace-nowrap">
                         AI Analysis
                       </Badge>
-                      <div className="text-2xl font-black text-emerald-400 drop-shadow-lg">
+                      <div className="text-2xl font-black text-emerald-400 drop-shadow-lg whitespace-nowrap">
                         {aiInsight.confidence} confidence
                       </div>
                     </div>
@@ -181,14 +180,14 @@ export default function ProfilePage() {
                       <h3 className="font-black text-2xl bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400 bg-clip-text text-transparent tracking-tight leading-tight">
                         Smart Insight
                       </h3>
-                      <p className="text-xl text-slate-200 leading-relaxed max-h-20 overflow-hidden">
+                      <p className="text-lg text-slate-200 leading-relaxed max-h-[80px] overflow-hidden line-clamp-3">
                         {aiInsight.insight}
                       </p>
                     </div>
-                    <div className="flex items-center gap-4 pt-4 border-t border-emerald-400/30">
-                      <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-lg animate-pulse"></div>
-                      <div className="flex-1">
-                        <p className="font-bold text-lg text-emerald-300 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-6 py-3 rounded-2xl border-2 border-emerald-400/40 shadow-lg">
+                    <div className="flex items-center gap-4 pt-6 border-t-2 border-emerald-400/40">
+                      <div className="w-4 h-4 bg-emerald-400 rounded-full shadow-lg animate-pulse flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-xl text-emerald-300 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-6 py-4 rounded-2xl border-2 border-emerald-400/40 shadow-xl truncate">
                           {aiInsight.recommendation}
                         </p>
                       </div>
@@ -200,22 +199,22 @@ export default function ProfilePage() {
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* 🔥 BIG MOOD TRACKER */}
+            {/* ✅ FIXED MOOD TRACKER - STATS INSIDE */}
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
-              <Card className="h-[560px] shadow-2xl border-emerald-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl hover:shadow-emerald-500/25 transition-all duration-500">
-                <CardHeader className="pb-8">
+              <Card className="h-[580px] shadow-2xl border border-emerald-400/40 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl overflow-hidden hover:shadow-emerald-500/25 transition-all duration-500">
+                <CardHeader className="pb-8 px-10 pt-10">
                   <CardTitle className="flex items-center gap-4 text-3xl font-black tracking-tight">
-                    <Smile className="w-10 h-10 text-emerald-400 drop-shadow-2xl" />
+                    <Smile className="w-12 h-12 text-emerald-400 drop-shadow-2xl" />
                     Log Mood
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-10 pb-12 pt-0 space-y-8">
-                  <div className="space-y-6">
+                <CardContent className="px-10 pb-12 pt-0 space-y-8 h-[380px] flex flex-col justify-between">
+                  <div className="space-y-8 flex-1">
                     <Select value={mood} onValueChange={setMood}>
-                      <SelectTrigger className="h-20 rounded-3xl border-3 border-emerald-400/40 bg-slate-700/50 backdrop-blur-sm focus:ring-4 focus:ring-emerald-400/30 focus:border-emerald-400 shadow-2xl">
+                      <SelectTrigger className="h-20 rounded-3xl border-3 border-emerald-400/40 bg-slate-700/70 backdrop-blur-sm focus:ring-4 focus:ring-emerald-400/30 focus:border-emerald-400 shadow-2xl text-xl">
                         <SelectValue placeholder="How are you feeling today?" />
                       </SelectTrigger>
-                      <SelectContent className="border-emerald-400/30 bg-slate-800/90 backdrop-blur-sm rounded-3xl">
+                      <SelectContent className="border-emerald-400/30 bg-slate-800/95 backdrop-blur-xl rounded-3xl shadow-2xl">
                         <SelectItem value="great">😄 Feeling Great</SelectItem>
                         <SelectItem value="good">🙂 Pretty Good</SelectItem>
                         <SelectItem value="okay">😐 Just Okay</SelectItem>
@@ -228,43 +227,45 @@ export default function ProfilePage() {
                       value={moodNotes}
                       onChange={(e) => setMoodNotes(e.target.value)}
                       placeholder="What's on your mind today? (optional)"
-                      className="min-h-[140px] resize-none rounded-3xl border-3 border-emerald-400/30 bg-slate-700/50 backdrop-blur-sm focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/30 shadow-2xl text-xl py-8 px-8"
+                      className="min-h-[140px] resize-none rounded-3xl border-3 border-emerald-400/30 bg-slate-700/70 backdrop-blur-sm focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/30 shadow-2xl text-lg py-8 px-8"
                       rows={4}
                     />
                   </div>
                   
-                  <Button 
-                    onClick={logMood}
-                    disabled={!mood}
-                    className="w-full h-20 text-xl font-black bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-3xl shadow-2xl hover:shadow-emerald-500/50 border-3 border-emerald-400/40 transform hover:-translate-y-2 transition-all duration-300 backdrop-blur-sm"
-                  >
-                    <CheckCircle className="w-8 h-8 mr-4" />
-                    Log My Mood Today
-                  </Button>
+                  <div className="space-y-6">
+                    <Button 
+                      onClick={logMood}
+                      disabled={!mood}
+                      className="w-full h-20 text-xl font-black bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-3xl shadow-2xl hover:shadow-emerald-500/50 border-3 border-emerald-400/40 transform hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm"
+                    >
+                      <CheckCircle className="w-8 h-8 mr-4" />
+                      Log My Mood Today
+                    </Button>
 
-                  {/* ✅ STATS INSIDE BOX */}
-                  <div className="pt-12 border-t-4 border-emerald-400/50 text-center">
-                    <div className="text-6xl lg:text-7xl font-black bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent drop-shadow-2xl mb-6">
-                      {stats.greatPercentage}%
-                    </div>
-                    <div className="text-2xl font-bold text-emerald-400 bg-slate-800/70 px-8 py-4 rounded-2xl border border-emerald-400/40 inline-block">
-                      {stats.totalMoods} total moods
+                    {/* ✅ STATS PERFECTLY INSIDE BOX */}
+                    <div className="pt-8 border-t-4 border-emerald-400/50 text-center space-y-4">
+                      <div className="text-6xl font-black bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent drop-shadow-2xl">
+                        {stats.greatPercentage}%
+                      </div>
+                      <div className="text-2xl font-bold text-emerald-400 bg-slate-800/80 px-12 py-6 rounded-3xl border-2 border-emerald-400/50 shadow-xl backdrop-blur-sm inline-block">
+                        {stats.totalMoods} total moods
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* 🔥 BIG RECENT MOODS */}
+            {/* RECENT MOODS */}
             <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
-              <Card className="h-[560px] shadow-2xl border-emerald-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-xl hover:shadow-emerald-500/25 transition-all duration-500">
-                <CardHeader className="pb-8">
+              <Card className="h-[580px] shadow-2xl border border-emerald-400/40 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl overflow-hidden hover:shadow-emerald-500/25 transition-all duration-500">
+                <CardHeader className="pb-8 px-10 pt-10">
                   <CardTitle className="flex items-center gap-4 text-3xl font-black tracking-tight">
-                    <Clock className="w-10 h-10 text-emerald-400 drop-shadow-2xl animate-pulse" />
+                    <Clock className="w-12 h-12 text-emerald-400 drop-shadow-2xl animate-pulse" />
                     Recent Moods
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-10 pb-12 pt-0 h-[420px] overflow-y-auto">
+                <CardContent className="px-10 pb-12 pt-0 h-[380px] overflow-y-auto">
                   {moods.length > 0 ? (
                     moods.map((moodItem, idx) => (
                       <motion.div 
@@ -272,24 +273,24 @@ export default function ProfilePage() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
-                        className="group p-8 border-t border-emerald-400/20 first:border-t-0 hover:bg-emerald-500/10 transition-all duration-300 rounded-3xl mb-4 backdrop-blur-sm shadow-xl hover:shadow-emerald-400/30 hover:-translate-y-2"
+                        className="group p-8 border-t border-emerald-400/20 first:border-t-0 hover:bg-emerald-500/10 transition-all duration-300 rounded-3xl mb-6 backdrop-blur-sm shadow-xl hover:shadow-emerald-400/30 hover:-translate-y-2 max-w-full"
                       >
                         <div className="flex items-center gap-6">
-                          <div className="w-24 h-24 bg-gradient-to-br from-emerald-500/30 to-teal-500/30 rounded-3xl flex items-center justify-center shadow-2xl border-4 border-emerald-400/50 group-hover:scale-110 transition-transform duration-300">
+                          <div className="w-24 h-24 bg-gradient-to-br from-emerald-500/30 to-teal-500/30 rounded-3xl flex items-center justify-center shadow-2xl border-4 border-emerald-400/50 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
                             <div className="text-5xl drop-shadow-2xl">{getMoodEmoji(moodItem.mood)}</div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-3xl font-black capitalize text-slate-100 group-hover:text-emerald-400 mb-4 tracking-tight">
+                            <h4 className="text-3xl font-black capitalize text-slate-100 group-hover:text-emerald-400 mb-4 tracking-tight truncate">
                               {moodItem.mood}
                             </h4>
                             {moodItem.notes && (
-                              <p className="text-xl text-slate-300 bg-slate-800/60 px-6 py-4 rounded-2xl border border-slate-700/50 backdrop-blur-sm leading-relaxed">
+                              <p className="text-xl text-slate-300 bg-slate-800/60 px-6 py-4 rounded-2xl border border-slate-700/50 backdrop-blur-sm leading-relaxed line-clamp-2">
                                 "{moodItem.notes}"
                               </p>
                             )}
                           </div>
-                          <div className="text-right min-w-[100px]">
-                            <div className="text-2xl font-bold text-emerald-400 bg-emerald-500/30 px-6 py-4 rounded-2xl border-2 border-emerald-400/50 shadow-xl">
+                          <div className="text-right min-w-[120px] flex-shrink-0">
+                            <div className="text-2xl font-bold text-emerald-400 bg-emerald-500/30 px-6 py-4 rounded-2xl border-2 border-emerald-400/50 shadow-xl whitespace-nowrap">
                               {new Date(moodItem.created_at).toLocaleDateString('en-IN')}
                             </div>
                           </div>
@@ -307,12 +308,8 @@ export default function ProfilePage() {
                       </motion.div>
                       <h3 className="text-4xl font-black text-slate-400 mb-4">No Moods Yet</h3>
                       <p className="text-xl text-slate-500 mb-8 max-w-md mx-auto">
-                        Log your first mood using the tracker above to get started!
+                        Log your first mood using the tracker above!
                       </p>
-                      <div className="w-48 h-16 bg-emerald-500/20 rounded-2xl border-2 border-emerald-400/50 flex items-center justify-center backdrop-blur-sm">
-                        <Sparkles className="w-8 h-8 text-emerald-400 mr-3" />
-                        <span className="font-bold text-lg text-emerald-400">Ready to begin</span>
-                      </div>
                     </div>
                   )}
                 </CardContent>
