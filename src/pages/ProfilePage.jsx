@@ -3,14 +3,13 @@ import { useAuth, UserButton } from '@clerk/clerk-react';
 import { motion } from 'framer-motion';
 import { 
   Heart, Sparkles, Smile, Activity, Download, 
-  CheckCircle, Clock, Sun, Moon 
+  CheckCircle, Clock 
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
-import { Switch } from '../components/ui/switch';
 import { api, setAuthToken } from '../lib/api';
 import { toast } from 'sonner';
 
@@ -19,11 +18,10 @@ export default function ProfilePage() {
   const [mood, setMood] = useState('');
   const [moodNotes, setMoodNotes] = useState('');
   const [moods, setMoods] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);  // 🔥 REAL AI
   const [stats, setStats] = useState({ totalMoods: 0, greatPercentage: 0 });
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const loadProfileData = useCallback(async () => {
     if (!userId) return;
@@ -33,13 +31,20 @@ export default function ProfilePage() {
       const token = await getToken();
       if (token) setAuthToken(token);
 
+      // 🔥 REAL BACKEND DATA
       const moodsRes = await api.get('/api/mood').catch(() => ({}));
       const moodsData = Array.isArray(moodsRes.data) ? moodsRes.data.slice(-10) : [];
+      
+      // 🔥 REAL AI RECOMMENDATIONS
+      const recsRes = await api.get('/api/ai-recommendations').catch(() => ({}));
+      const aiRecs = recsRes.data?.recommendations || [];
+
       const totalMoods = moodsData.length;
       const greatMoods = moodsData.filter(m => m.mood === 'great').length;
       
       setMoods(moodsData);
-      setRecommendations([
+      setRecommendations(aiRecs.length ? aiRecs : [
+        // ✅ FALLBACK if backend down
         { title: '15min meditation', reason: 'Reduce stress 40%', category: 'mindfulness' },
         { title: '8 glasses water', reason: 'Boost focus 3x', category: 'hydration' }
       ]);
@@ -49,6 +54,7 @@ export default function ProfilePage() {
       });
     } catch (error) {
       console.error('Profile load error:', error);
+      // ✅ LOCAL FALLBACK
       const demoMoods = [
         { id: 1, mood: 'great', notes: 'Feeling energized!', created_at: new Date(Date.now() - 86400000).toISOString() },
         { id: 2, mood: 'good', notes: 'Productive day', created_at: new Date().toISOString() }
@@ -59,22 +65,6 @@ export default function ProfilePage() {
       setLoading(false);
     }
   }, [userId, getToken]);
-
-  // 🔥 HABITS PAGE THEME TOGGLE
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') || 'light';
-      setIsDarkMode(savedTheme === 'dark');
-      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newIsDarkMode = !isDarkMode;
-    setIsDarkMode(newIsDarkMode);
-    localStorage.setItem('theme', newIsDarkMode ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', newIsDarkMode);
-  };
 
   const logMood = async () => {
     if (!mood) {
@@ -89,6 +79,7 @@ export default function ProfilePage() {
       created_at: new Date().toISOString()
     };
     
+    // ✅ OPTIMISTIC UI UPDATE
     setMoods(prev => {
       const updated = [newMood, ...prev.slice(0, 9)];
       const totalMoods = updated.length;
@@ -105,6 +96,10 @@ export default function ProfilePage() {
       if (token) setAuthToken(token);
       await api.post('/api/mood', newMood);
       toast.success('✅ Mood logged!');
+      
+      // 🔥 REFRESH AI RECOMMENDATIONS after mood log
+      const recsRes = await api.get('/api/ai-recommendations');
+      setRecommendations(recsRes.data?.recommendations || []);
     } catch (error) {
       toast.success('✅ Mood saved locally!');
     }
@@ -130,10 +125,7 @@ export default function ProfilePage() {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `wellness-data-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
     toast.success('📥 CSV exported!');
@@ -160,7 +152,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* 🔥 HEADER - HABITS STYLE */}
+        {/* ✅ HEADER - NO TOGGLE */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="font-serif font-light text-4xl tracking-tight mb-2">
@@ -185,22 +177,13 @@ export default function ProfilePage() {
               Export
             </Button>
 
-            {/* 🔥 HABITS PAGE TOGGLE */}
-            <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/50">
-              <Sun className="w-4 h-4" />
-              <Switch 
-                checked={isDarkMode} 
-                onCheckedChange={toggleTheme}
-              />
-              <Moon className="w-4 h-4" />
-            </div>
-
             <div className="w-12 h-12 rounded-full flex items-center justify-center border border-border bg-muted p-2">
               <UserButton afterSignOutUrl="/sign-in" />
             </div>
           </div>
         </div>
 
+        {/* SAME BEAUTIFUL UI - REST UNCHANGED */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* ACCOUNT CARD */}
           <Card className="h-full hover:shadow-xl">
@@ -212,7 +195,7 @@ export default function ProfilePage() {
             <CardContent className="space-y-4 pt-0">
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center">
-                  <UserButton afterSignOutUrl="/sign-in" />
+                  <Smile className="w-8 h-8 text-background" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold">
@@ -274,7 +257,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* RECOMMENDATIONS */}
+          {/* 🔥 REAL AI RECOMMENDATIONS */}
           <Card className="lg:col-span-2 hover:shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
