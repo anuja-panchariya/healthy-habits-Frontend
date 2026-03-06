@@ -3,14 +3,20 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { UserButton, useAuth } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
 import { Home, Activity, BarChart3, Trophy, User, Moon, Sun } from 'lucide-react'
-import { useTheme } from './theme-provider'
 import { Button } from './ui/button'
+import { ThemeProvider } from '../theme-provider'  // ✅ FIXED PATH: ./ → ../
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { theme, setTheme } = useTheme()
   const { isSignedIn } = useAuth()
+
+  // ✅ THEME FALLBACK (No useTheme dependency)
+  const toggleTheme = () => {
+    const root = window.document.documentElement
+    const current = root.getAttribute('data-theme') || 'light'
+    root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark')
+  }
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
@@ -23,19 +29,22 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-background font-sans">
       {/* Top Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-3"
             >
-              <Activity className="w-6 h-6 text-primary" />
-              <span className="font-serif text-xl font-light tracking-tight">HealthyHabits</span>
+              <Activity className="w-8 h-8 text-primary drop-shadow-sm" />
+              <span className="font-serif text-2xl font-light tracking-tight bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+                HealthyHabits
+              </span>
             </motion.div>
 
-            <div className="hidden md:flex items-center space-x-1">
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center space-x-2">
               {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = location.pathname === item.path
@@ -45,7 +54,11 @@ export default function Layout({ children }) {
                     data-testid={`nav-${item.label.toLowerCase()}`}
                     onClick={() => navigate(item.path)}
                     variant={isActive ? 'default' : 'ghost'}
-                    className="rounded-full"
+                    className={`rounded-full h-12 px-6 font-medium transition-all hover:scale-105 ${
+                      isActive 
+                        ? 'bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25' 
+                        : 'hover:bg-accent hover:text-foreground'
+                    }`}
                   >
                     <Icon className="w-4 h-4 mr-2" />
                     {item.label}
@@ -54,46 +67,60 @@ export default function Layout({ children }) {
               })}
             </div>
 
+            {/* Right Side Controls */}
             <div className="flex items-center space-x-3">
               <Button
                 data-testid="theme-toggle"
                 variant="ghost"
                 size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="rounded-full"
+                onClick={toggleTheme}
+                className="rounded-full h-12 w-12 hover:bg-accent hover:scale-110 transition-all shadow-md"
               >
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                <Moon className="w-5 h-5" />
+                <Sun className="w-5 h-5 hidden" />
               </Button>
-              {isSignedIn && <UserButton />}
+              {isSignedIn && (
+                <UserButton 
+                  afterSignOutUrl="/sign-in"
+                  appearance={{
+                    elements: { userButtonBox: { width: '2.5rem', height: '2.5rem' } }
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
-        <div className="flex items-center justify-around px-4 py-3">
+      {/* Mobile Bottom Nav */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/50 shadow-2xl">
+        <div className="flex items-center justify-around px-2 py-2">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.path
             return (
-              <button
+              <motion.button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex flex-col items-center space-y-1 ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
+                whileTap={{ scale: 0.95 }}
+                className={`flex flex-col items-center space-y-1 p-2 rounded-2xl transition-all group ${
+                  isActive 
+                    ? 'text-primary bg-primary/10 shadow-lg shadow-primary/20' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-xs">{item.label}</span>
-              </button>
+                <Icon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-medium tracking-wide">{item.label}</span>
+              </motion.button>
             )
           })}
         </div>
       </div>
 
-      {/* Main Content */}
-      <main className="pb-20 md:pb-0">{children}</main>
+      {/* Main Content Area */}
+      <main className="pt-2 pb-24 md:pb-0 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        {children}
+      </main>
     </div>
   )
 }
