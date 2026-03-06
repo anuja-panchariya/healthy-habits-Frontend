@@ -12,7 +12,6 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { api, setAuthToken } from '../lib/api';
 import { toast } from 'sonner';
-import { useTheme } from '../theme-provider'; // 🔥 LAYOUT THEME
 
 export default function ProfilePage() {
   const { getToken, userId, user } = useAuth();
