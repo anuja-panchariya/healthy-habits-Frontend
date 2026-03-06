@@ -3,20 +3,32 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { UserButton, useAuth } from '@clerk/clerk-react'
 import { motion } from 'framer-motion'
 import { Home, Activity, BarChart3, Trophy, User, Moon, Sun } from 'lucide-react'
-import { Button } from './ui/button'
-import { ThemeProvider } from '../theme-provider'  // ✅ FIXED PATH: ./ → ../
+import { Button } from '../components/ui/button'  // ✅ ABSOLUTE PATH
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { isSignedIn } = useAuth()
 
-  // ✅ THEME FALLBACK (No useTheme dependency)
+  // ✅ PURE CSS THEME TOGGLE - NO IMPORTS
   const toggleTheme = () => {
-    const root = window.document.documentElement
-    const current = root.getAttribute('data-theme') || 'light'
-    root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark')
+    const html = document.documentElement
+    const isDark = html.classList.contains('dark')
+    if (isDark) {
+      html.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    } else {
+      html.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    }
   }
+
+  // Load theme on mount
+  React.useEffect(() => {
+    const saved = localStorage.getItem('theme')
+    const isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    if (isDark) document.documentElement.classList.add('dark')
+  }, [])
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
@@ -51,7 +63,6 @@ export default function Layout({ children }) {
                 return (
                   <Button
                     key={item.path}
-                    data-testid={`nav-${item.label.toLowerCase()}`}
                     onClick={() => navigate(item.path)}
                     variant={isActive ? 'default' : 'ghost'}
                     className={`rounded-full h-12 px-6 font-medium transition-all hover:scale-105 ${
@@ -67,26 +78,18 @@ export default function Layout({ children }) {
               })}
             </div>
 
-            {/* Right Side Controls */}
+            {/* Right Controls */}
             <div className="flex items-center space-x-3">
               <Button
-                data-testid="theme-toggle"
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
                 className="rounded-full h-12 w-12 hover:bg-accent hover:scale-110 transition-all shadow-md"
               >
-                <Moon className="w-5 h-5" />
-                <Sun className="w-5 h-5 hidden" />
+                <Moon className="w-5 h-5 dark:hidden" />
+                <Sun className="w-5 h-5 hidden dark:block" />
               </Button>
-              {isSignedIn && (
-                <UserButton 
-                  afterSignOutUrl="/sign-in"
-                  appearance={{
-                    elements: { userButtonBox: { width: '2.5rem', height: '2.5rem' } }
-                  }}
-                />
-              )}
+              {isSignedIn && <UserButton afterSignOutUrl="/sign-in" />}
             </div>
           </div>
         </div>
@@ -105,7 +108,7 @@ export default function Layout({ children }) {
                 whileTap={{ scale: 0.95 }}
                 className={`flex flex-col items-center space-y-1 p-2 rounded-2xl transition-all group ${
                   isActive 
-                    ? 'text-primary bg-primary/10 shadow-lg shadow-primary/20' 
+                    ? 'text-primary bg-primary/10 shadow-lg shadow-primary/20 scale-105' 
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 }`}
               >
@@ -117,7 +120,7 @@ export default function Layout({ children }) {
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="pt-2 pb-24 md:pb-0 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {children}
       </main>
