@@ -20,18 +20,14 @@ Production-ready **full-stack habit tracking app** with:
 
 ## 🎯 **Features**
 ✅ User Auth (Clerk JWT) - Sign up/Login/Protected routes
-✅ Habit CRUD - Create/Edit/Delete habits with categories
-✅ Daily Logging - Streak tracking + mood correlation
+✅ Habit CRUD - Create/Delete habits with categories
 ✅ AI Recommendations - GPT-4o-mini habit suggestions
 ✅ Realtime Dashboard - Wellness score, streaks, analytics
-✅ Email Reminders - Automated daily habit notifications
-✅ Mood Tracker - 5-level mood + habit impact analysis
 ✅ Responsive Design - Mobile-first glassmorphism UI
-✅ Production Deploy - Vercel (FE) + Render (BE)
+✅ Production Deploy - Render (FE) + Render (BE)
 ✅ 🎨 Beautiful wellness-focused design
 ✅ 🌓 Dark mode support
 ✅ 📱 Fully responsive
-✅ 🔐 Secure authentication with Clerk
 ✅ 📊 Interactive charts and analytics
 ✅ ✨ Smooth animations
 ✅ 🤖 AI-powered recommendations
