@@ -1,5 +1,43 @@
 # HealthyHabits Tracker - Frontend
 
+🥗 **Healthy Habits Tracker**
+ Full-Stack Wellness App with AI Insights & Realtime Analytics
+
+Frontend : https://healthy-habits-frontend.onrender.com
+Backend :https://healthy-habits-be-1.onrender.com
+
+
+
+ ✨ **Project Overview**
+
+Production-ready **full-stack habit tracking app** with:
+- **Daily habit logging** with realtime streaks
+- **Mood correlation analytics** 
+- **AI-powered habit recommendations** (GPT-4o-mini)
+- **Email reminders** & **wellness score**
+- **Responsive dashboard** with glassmorphism UI
+- **Clerk authentication** + **Supabase realtime**
+
+## 🎯 **Features**
+✅ User Auth (Clerk JWT) - Sign up/Login/Protected routes
+✅ Habit CRUD - Create/Edit/Delete habits with categories
+✅ Daily Logging - Streak tracking + mood correlation
+✅ AI Recommendations - GPT-4o-mini habit suggestions
+✅ Realtime Dashboard - Wellness score, streaks, analytics
+✅ Email Reminders - Automated daily habit notifications
+✅ Mood Tracker - 5-level mood + habit impact analysis
+✅ Responsive Design - Mobile-first glassmorphism UI
+✅ Production Deploy - Vercel (FE) + Render (BE)
+✅ 🎨 Beautiful wellness-focused design
+✅ 🌓 Dark mode support
+✅ 📱 Fully responsive
+✅ 🔐 Secure authentication with Clerk
+✅ 📊 Interactive charts and analytics
+✅ ✨ Smooth animations
+✅ 🤖 AI-powered recommendations
+✅ 🏆 Community challenges
+
+
 Modern habit tracking application built with React, Redux, and Tailwind CSS.
 
 ## Tech Stack
@@ -13,17 +51,6 @@ Modern habit tracking application built with React, Redux, and Tailwind CSS.
 - **Recharts** - Data visualization
 - **Axios** - API calls
 
-## Features
-
-- 🎨 Beautiful wellness-focused design
-- 🌓 Dark mode support
-- 📱 Fully responsive
-- 🔐 Secure authentication with Clerk
-- 📊 Interactive charts and analytics
-- ✨ Smooth animations
-- 🎯 Habit tracking and streaks
-- 🤖 AI-powered recommendations
-- 🏆 Community challenges
 
 ## Getting Started
 
