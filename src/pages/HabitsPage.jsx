@@ -1,342 +1,226 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useAuth, UserButton } from '@clerk/clerk-react';
-import { motion } from 'framer-motion';
-import { 
-  Heart, Sparkles, Smile, Activity, Download, 
-  CheckCircle, Clock, Sun, Moon 
-} from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Textarea } from '../components/ui/textarea';
-import { Badge } from '../components/ui/badge';
-import { Switch } from '../components/ui/switch';
-import { api, setAuthToken } from '../lib/api';
-import { toast } from 'sonner';
+import React, { useEffect, useState, useCallback } from 'react'
+import { useAuth } from '@clerk/clerk-react'
+import { motion } from 'framer-motion'
+import { api, setAuthToken } from '../lib/api'
+import { toast } from 'sonner'
+import { Plus, Trash2, CheckCircle } from 'lucide-react'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 
-export default function ProfilePage() {
-  const { getToken, userId, user } = useAuth();
-  const [mood, setMood] = useState('');
-  const [moodNotes, setMoodNotes] = useState('');
-  const [moods, setMoods] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
-  const [stats, setStats] = useState({ totalMoods: 0, greatPercentage: 0 });
-  const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+export default function HabitsPage() {
+  const { getToken } = useAuth()
+  const [habits, setHabits] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [formData, setFormData] = useState({
+    title: '', category: '', goal_type: 'daily', goal_value: 1, days: []
+  })
+  const [isCreating, setIsCreating] = useState(false)
 
-  const loadProfileData = useCallback(async () => {
-    if (!userId) return;
-    
+  const loadHabits = useCallback(async () => {
     try {
-      setLoading(true);
-      const token = await getToken();
-      if (token) setAuthToken(token);
-
-      const moodsRes = await api.get('/api/mood').catch(() => ({}));
-      const moodsData = Array.isArray(moodsRes.data) ? moodsRes.data.slice(-10) : [];
-      const totalMoods = moodsData.length;
-      const greatMoods = moodsData.filter(m => m.mood === 'great').length;
-      
-      setMoods(moodsData);
-      setRecommendations([
-        { title: '15min meditation', reason: 'Reduce stress 40%', category: 'mindfulness' },
-        { title: '8 glasses water', reason: 'Boost focus 3x', category: 'hydration' }
-      ]);
-      setStats({
-        totalMoods,
-        greatPercentage: totalMoods ? Math.round((greatMoods / totalMoods) * 100) : 0
-      });
+      const token = await getToken()
+      setAuthToken(token)
+      const res = await api.get('/api/habits')
+      setHabits(res.habits || [])
     } catch (error) {
-      console.error('Profile load error:', error);
-      const demoMoods = [
-        { id: 1, mood: 'great', notes: 'Feeling energized!', created_at: new Date(Date.now() - 86400000).toISOString() },
-        { id: 2, mood: 'good', notes: 'Productive day', created_at: new Date().toISOString() }
-      ];
-      setMoods(demoMoods);
-      setStats({ totalMoods: 2, greatPercentage: 50 });
+      console.error('Error loading habits:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [userId, getToken]);
+  }, [getToken])
 
-  // 🔥 HABITS PAGE THEME TOGGLE
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') || 'light';
-      setIsDarkMode(savedTheme === 'dark');
-      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+    loadHabits()
+  }, [loadHabits])
+
+  // ✅ FIXED: handleDelete FUNCTION
+  const handleDelete = async (habitId, habitTitle) => {
+    if (!confirm(`Delete "${habitTitle}"?`)) return
+    try {
+      const token = await getToken()
+      setAuthToken(token)
+      await api.delete(`/api/habits/${habitId}`)
+      toast.success('🗑️ Habit deleted!')
+      loadHabits()
+    } catch (error) {
+      toast.error('Failed to delete habit')
     }
-  }, []);
+  }
 
-  const toggleTheme = () => {
-    const newIsDarkMode = !isDarkMode;
-    setIsDarkMode(newIsDarkMode);
-    localStorage.setItem('theme', newIsDarkMode ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', newIsDarkMode);
-  };
+  // ✅ FIXED: handleLogHabit FUNCTION  
+  const handleLogHabit = async (habitId, habitTitle) => {
+    try {
+      const token = await getToken()
+      setAuthToken(token)
+      await api.post(`/api/habits/${habitId}/log`)
+      toast.success(`✅ "${habitTitle}" logged today!`)
+      loadHabits()
+    } catch (error) {
+      if (error.response?.status === 409) {
+        toast.info('Already logged today!')
+      } else {
+        toast.error('Failed to log habit')
+      }
+    }
+  }
 
-  const logMood = async () => {
-    if (!mood) {
-      toast.error('Please select a mood!');
-      return;
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!formData.title.trim() || !formData.category) {
+      toast.error('Title & category required!')
+      return
     }
 
-    const newMood = {
-      id: Date.now(),
-      mood,
-      notes: moodNotes,
-      created_at: new Date().toISOString()
-    };
-    
-    setMoods(prev => {
-      const updated = [newMood, ...prev.slice(0, 9)];
-      const totalMoods = updated.length;
-      const greatMoods = updated.filter(m => m.mood === 'great').length;
-      setStats({
-        totalMoods,
-        greatPercentage: totalMoods ? Math.round((greatMoods / totalMoods) * 100) : 0
-      });
-      return updated;
-    });
+    const tempHabit = {
+      id: `temp-${Date.now()}`,
+      title: formData.title,
+      category: formData.category,
+      goal_type: formData.goal_type,
+      goal_value: formData.goal_value,
+      days: formData.days,
+      created_at: new Date().toISOString(),
+      logs: []
+    }
+
+    setHabits(prev => [tempHabit, ...prev])
+    setIsCreating(true)
 
     try {
-      const token = await getToken();
-      if (token) setAuthToken(token);
-      await api.post('/api/mood', newMood);
-      toast.success('✅ Mood logged!');
+      const token = await getToken()
+      setAuthToken(token)
+      const res = await api.post('/api/habits', formData)
+      
+      const realHabit = res.habit || { ...tempHabit, id: res.id || Date.now().toString() }
+      setHabits(prev => prev.map(h => h.id === tempHabit.id ? realHabit : h))
+      
+      toast.success(`🎉 "${formData.title}" created!`)
+      setShowAddForm(false)
+      setFormData({ title: '', category: '', goal_type: 'daily', goal_value: 1, days: [] })
     } catch (error) {
-      toast.success('✅ Mood saved locally!');
+      setHabits(prev => prev.filter(h => !h.id.startsWith('temp-')))
+      toast.error('Failed to create habit')
+    } finally {
+      setIsCreating(false)
     }
-    setMood('');
-    setMoodNotes('');
-  };
+  }
 
-  const exportCSV = () => {
-    setExporting(true);
-    const csvRows = [
-      ['Date', 'Mood', 'Notes', 'Great %'],
-      ...moods.map(m => [
-        new Date(m.created_at).toLocaleDateString('en-IN'),
-        m.mood.toUpperCase(),
-        `"${m.notes || ''}"`,
-        stats.greatPercentage + '%'
-      ])
-    ];
-    
-    const csvContent = csvRows.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `wellness-data-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    toast.success('📥 CSV exported!');
-    setExporting(false);
-  };
-
-  useEffect(() => {
-    loadProfileData();
-  }, [loadProfileData]);
-
-  const getMoodEmoji = (mood) => {
-    const emojis = { great: '😄', good: '🙂', okay: '😐', bad: '☹️', terrible: '😢' };
-    return emojis[mood] || '🙂';
-  };
-
-  if (loading && moods.length === 0) {
+  if (loading && habits.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* 🔥 HEADER - HABITS STYLE */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="font-serif font-light text-4xl tracking-tight mb-2">
-              Profile & Wellness
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              AI insights + mood tracking
-            </p>
+            <h1 className="font-serif font-light text-4xl tracking-tight mb-2">My Habits</h1>
+            <p className="text-muted-foreground">Today: {new Date().toLocaleDateString('en-US', { weekday: 'long' })}</p>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <Button 
-              onClick={exportCSV}
-              disabled={exporting}
-              className="rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90"
-            >
-              {exporting ? (
-                <Activity className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4 mr-2" />
-              )}
-              Export
-            </Button>
-
-            {/* 🔥 HABITS PAGE TOGGLE */}
-            <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/50">
-              <Sun className="w-4 h-4" />
-              <Switch 
-                checked={isDarkMode} 
-                onCheckedChange={toggleTheme}
-              />
-              <Moon className="w-4 h-4" />
-            </div>
-
-            <div className="w-12 h-12 rounded-full flex items-center justify-center border border-border bg-muted p-2">
-              <UserButton afterSignOutUrl="/sign-in" />
-            </div>
-          </div>
+          <Button
+            onClick={() => setShowAddForm(!showAddForm)}
+            disabled={isCreating}
+            className="rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {showAddForm ? 'Cancel' : 'Add Habit'}
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* ACCOUNT CARD */}
-          <Card className="h-full hover:shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                👤 Account
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0">
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center">
-                  <UserButton afterSignOutUrl="/sign-in" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold">
-                    {user?.fullName || user?.firstName || 'Anuja Panchariya'}
-                  </h3>
-                  <Badge className="mt-2">✅ Verified User</Badge>
-                </div>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="bg-muted/50 p-6 rounded-2xl border border-dashed border-muted-foreground/50"
+          >
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Habit Name *</label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="e.g., Drink Water"
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* MOOD CARD */}
-          <Card className="h-full hover:shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                😊 Today's Mood
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0">
-              <div className="space-y-3">
-                <Select value={mood} onValueChange={setMood}>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category *</label>
+                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="How do you feel today?" />
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="great">😄 Great</SelectItem>
-                    <SelectItem value="good">🙂 Good</SelectItem>
-                    <SelectItem value="okay">😐 Okay</SelectItem>
-                    <SelectItem value="bad">☹️ Bad</SelectItem>
-                    <SelectItem value="terrible">😢 Terrible</SelectItem>
+                    <SelectItem value="Health">💧 Health</SelectItem>
+                    <SelectItem value="Fitness">🏃 Fitness</SelectItem>
+                    <SelectItem value="Productivity">⚡ Productivity</SelectItem>
+                    <SelectItem value="Nutrition">🍎 Nutrition</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                <Textarea 
-                  value={moodNotes}
-                  onChange={(e) => setMoodNotes(e.target.value)}
-                  placeholder="What's on your mind? (optional)"
-                  className="min-h-[80px]"
-                />
-                
-                <Button 
-                  onClick={logMood}
-                  disabled={!mood}
-                  className="w-full rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Log Mood
+              </div>
+              <div className="md:col-span-2 flex gap-2 pt-4">
+                <Button type="submit" disabled={isCreating} className="flex-1">
+                  {isCreating ? 'Creating...' : 'Create Habit'}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  Cancel
                 </Button>
               </div>
+            </form>
+          </motion.div>
+        )}
 
-              <div className="text-center pt-6 border-t border-border space-y-2">
-                <div className="text-4xl font-bold text-primary">
-                  {stats.greatPercentage}%
-                </div>
-                <p className="text-muted-foreground text-sm uppercase tracking-wide">
-                  {stats.totalMoods} moods tracked
-                </p>
-              </div>
+        {habits.length === 0 ? (
+          <Card className="text-center py-16">
+            <CardContent>
+              <div className="text-6xl mb-6 opacity-50">🎯</div>
+              <h3 className="text-2xl font-bold mb-4">No habits yet!</h3>
+              <p className="text-muted-foreground">Add your first habit above</p>
             </CardContent>
           </Card>
-
-          {/* RECOMMENDATIONS */}
-          <Card className="lg:col-span-2 hover:shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                ✨ AI Recommendations
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-4">
-              {recommendations.map((rec, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-6 rounded-2xl border border-border bg-muted/50 hover:bg-muted/70 transition-all"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-6 h-6 text-background" />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {habits.map((habit) => (
+              <motion.div
+                key={habit.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Card className="h-full hover:shadow-xl">
+                  <CardHeader>
+                    <CardTitle>{habit.title}</CardTitle>
+                    <p className="text-muted-foreground">{habit.category}</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => handleLogHabit(habit.id, habit.title)}  // ✅ FIXED!
+                        size="sm" 
+                        className="flex-1"
+                        variant="default"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Log Today
+                      </Button>
+                      <Button 
+                        onClick={() => handleDelete(habit.id, habit.title)}     // ✅ FIXED!
+                        size="sm" 
+                        variant="outline"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-lg mb-2">{rec.title}</h4>
-                      <p className="text-muted-foreground mb-3">{rec.reason}</p>
-                      <Badge variant="secondary">{rec.category}</Badge>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* RECENT MOODS */}
-          <Card className="lg:col-span-2 hover:shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                📅 Recent Moods
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              {moods.map((moodItem) => (
-                <motion.div 
-                  key={moodItem.id}
-                  className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-muted/50 hover:bg-muted/70 transition-all"
-                >
-                  <div className="text-3xl flex-shrink-0">{getMoodEmoji(moodItem.mood)}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold capitalize text-lg mb-1">
-                      {moodItem.mood}
-                    </p>
-                    {moodItem.notes && (
-                      <p className="text-muted-foreground text-sm">
-                        {moodItem.notes}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-sm font-medium text-primary min-w-[70px] text-right">
-                    {new Date(moodItem.created_at).toLocaleDateString('en-IN')}
-                  </span>
-                </motion.div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
-  );
+  )
 }
