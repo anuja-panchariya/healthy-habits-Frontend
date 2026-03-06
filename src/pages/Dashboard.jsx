@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { 
-  TrendingUp, Activity, Target, Flame, Plus, CheckCircle, Zap, Sun, Moon 
+  TrendingUp, Activity, Target, Flame, Plus, CheckCircle, Zap 
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -11,31 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { Switch } from "../components/ui/switch";
 import { Progress } from "../components/ui/progress";
 import { api, setAuthToken } from "../lib/api";
 import { toast } from "sonner";
 
 export default function Dashboard() {
   const { getToken, userId } = useAuth();
-  const [isDark, setIsDark] = useState(false);
   const [habits, setHabits] = useState([]);
   const [wellnessScore, setWellnessScore] = useState(0);
   const [loading, setLoading] = useState(true);
-
-  // 🎯 PROPER DARK/LIGHT MODE - Habits page style
-  useEffect(() => {
-    const saved = localStorage.getItem('darkMode') === 'true';
-    setIsDark(saved);
-    document.documentElement.classList.toggle('dark', saved);
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newDark = !isDark;
-    setIsDark(newDark);
-    localStorage.setItem('darkMode', newDark);
-    document.documentElement.classList.toggle('dark', newDark);
-  };
 
   // 🎯 REAL WELLNESS SCORE - Backend data
   const calculateWellnessScore = useCallback((habitsData) => {
@@ -111,24 +95,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto space-y-8 relative">
+      <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* 🌙 DARK MODE TOGGLE - Habits page style */}
-        <motion.div 
-          className="absolute top-6 right-6 z-50 flex items-center gap-2 p-3 rounded-xl bg-muted backdrop-blur-sm border border-border hover:bg-muted/80 transition-all"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-        >
-          <Sun className="w-5 h-5 text-muted-foreground" />
-          <Switch 
-            checked={isDark} 
-            onCheckedChange={toggleDarkMode}
-            className="data-[state=checked]:bg-primary"
-          />
-          <Moon className="w-5 h-5 text-primary" />
-        </motion.div>
-
-        {/* ✨ HEADER - Senior level */}
+        {/* ✨ HEADER - Clean no toggle */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -140,12 +109,7 @@ export default function Dashboard() {
             </h1>
             <p className="text-2xl text-muted-foreground font-semibold">
               Your Score: 
-              <span className={`font-black text-4xl ml-3 ${
-                wellnessScore >= 80 ? 'text-destructive' : 
-                wellnessScore >= 60 ? 'text-primary' : 
-                wellnessScore >= 40 ? 'text-warning' : 
-                'text-destructive'
-              }`}>
+              <span className={`font-black text-4xl ml-3 ${wellnessScore >= 80 ? 'text-green-500' : wellnessScore >= 60 ? 'text-primary' : wellnessScore >= 40 ? 'text-yellow-500' : 'text-destructive'}`}>
                 {wellnessScore}%
               </span>
             </p>
@@ -160,7 +124,7 @@ export default function Dashboard() {
           </Button>
         </motion.div>
 
-        {/* 📊 MAIN BENTO GRID - Habits page style */}
+        {/* 📊 MAIN BENTO GRID */}
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-4 gap-6"
           initial={{ opacity: 0, y: 20 }}
@@ -174,7 +138,7 @@ export default function Dashboard() {
             animate={{ y: 0, opacity: 1 }}
             className="lg:col-span-2 h-80 lg:h-96"
           >
-            <Card className="h-full hover:shadow-xl border-0 bg-card">
+            <Card className="h-full hover:shadow-xl border-0 bg-gradient-to-br from-card to-muted">
               <CardHeader className="pb-6">
                 <CardTitle className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -197,7 +161,7 @@ export default function Dashboard() {
                     {wellnessScore}%
                   </motion.div>
                   
-                  <Progress value={wellnessScore} className="h-6 mb-8 [&>div]:!bg-primary" />
+                  <Progress value={wellnessScore} className="h-6 mb-8 [&>div]:!bg-gradient-to-r from-primary to-primary/80" />
                   
                   <p className="text-2xl font-bold text-foreground leading-tight">
                     {habits.length === 0 
@@ -239,7 +203,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 🎯 TODAY'S HABITS - Habits page style */}
+          {/* 🎯 RECENT HABITS */}
           <motion.div 
             initial={{ y: 50, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
