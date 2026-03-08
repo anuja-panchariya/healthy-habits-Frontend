@@ -3,7 +3,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { 
   TrendingUp, Activity, Flame, Plus, Crown 
-} from "lucide-react";  // ✅ Zap REMOVED
+} from "lucide-react";  
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -41,7 +41,7 @@ export default function Dashboard() {
     return streak;
   }, [habits]);
 
-  // 🎯 REAL WELLNESS SCORE
+  //  REAL WELLNESS SCORE
   const calculateWellnessScore = useCallback((habitsData) => {
     if (!Array.isArray(habitsData) || habitsData.length === 0) return 0;
     
@@ -54,14 +54,14 @@ export default function Dashboard() {
     return Math.max(0, Math.min(100, Math.round((completedToday / habitsData.length) * 100)));
   }, []);
 
-  // 🚀 LOAD REAL DATA - FIXED ENDPOINTS + ERROR HANDLING
+  //  LOAD REAL DATA - FIXED ENDPOINTS + ERROR HANDLING
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken();
       if (token) setAuthToken(token);
 
-      // ✅ TRY /api/habits first (via habitRoutes)
+      // TRY /api/habits first (via habitRoutes)
       let habitsData = [];
       try {
         const habitsRes = await api.get("/api/habits");
@@ -71,7 +71,7 @@ export default function Dashboard() {
         habitsData = [];
       }
       
-      // ✅ TRY /api/moods first (via moodRoutes)
+      //  TRY /api/moods first (via moodRoutes)
       let moodData = [];
       try {
         const moodsRes = await api.get("/api/moods");
@@ -301,7 +301,7 @@ export default function Dashboard() {
               </div>
             </Card>
 
-            {/* ✅ FIXED: Quick Actions - NO Zap */}
+            {/*  Quick Actions */}
             <Card className="backdrop-blur-xl bg-slate-900/50 border border-emerald-500/20 hover:border-emerald-400/40 shadow-xl hover:shadow-emerald-500/20 rounded-2xl p-6">
               <h4 className="text-xl font-black text-emerald-300 mb-6 flex items-center gap-3">
                 ⚡ Quick Actions
@@ -327,7 +327,7 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-        {/* 🔥 ELITE INSIGHTS */}
+        {/*  ELITE INSIGHTS */}
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-16"
           initial={{ opacity: 0, y: 40 }}
