@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { 
@@ -14,14 +14,35 @@ import {
 import { Progress } from "../components/ui/progress";
 import { api, setAuthToken } from "../lib/api";
 import { toast } from "sonner";
+import StreakHeatmap from './StreakHeatmap';
+import AIInsights from './AIInsights';
+import ShareMilestone from './ShareMilestone';
 
 export default function Dashboard() {
   const { getToken, userId } = useAuth();
   const [habits, setHabits] = useState([]);
+  const [moodLogs, setMoodLogs] = useState([]);  
   const [wellnessScore, setWellnessScore] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // 🎯 REAL WELLNESS SCORE - Backend data
+  // 🔥 CURRENT STREAK CALCULATION ✅ ADDED
+  const currentStreak = useMemo(() => {
+    const allLogs = habits.flatMap(h => h.logs || []);
+    const logs = allLogs.map(log => new Date(log.date).toDateString());
+    let streak = 0;
+    const today = new Date().toDateString();
+    
+    for (let i = 0; i < 30; i++) {
+      const checkDate = new Date();
+      checkDate.setDate(checkDate.getDate() - i);
+      if (logs.includes(checkDate.toDateString())) {
+        streak++;
+      } else break;
+    }
+    return streak;
+  }, [habits]);
+
+  // 🎯 REAL WELLNESS SCORE
   const calculateWellnessScore = useCallback((habitsData) => {
     if (!Array.isArray(habitsData) || habitsData.length === 0) return 0;
     
@@ -34,7 +55,7 @@ export default function Dashboard() {
     return Math.max(0, Math.min(100, Math.round((completedToday / habitsData.length) * 100)));
   }, []);
 
-  // 🚀 LOAD REAL DATA - Backend first
+  // 🚀 LOAD REAL DATA
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
@@ -44,7 +65,12 @@ export default function Dashboard() {
       const habitsRes = await api.get("/api/habits");
       const habitsData = habitsRes.habits || [];
       
+      // ✅ FETCH MOOD LOGS TOO
+      const moodsRes = await api.get("/api/mood").catch(() => ({}));
+      const moodData = Array.isArray(moodsRes.data) ? moodsRes.data : [];
+      
       setHabits(habitsData);
+      setMoodLogs(moodData);
       const score = calculateWellnessScore(habitsData);
       setWellnessScore(score);
       
@@ -52,6 +78,7 @@ export default function Dashboard() {
       console.error("Dashboard error:", error);
       toast.error("Backend error - Check connection");
       setHabits([]);
+      setMoodLogs([]);
       setWellnessScore(0);
     } finally {
       setLoading(false);
@@ -64,14 +91,13 @@ export default function Dashboard() {
     }
   }, [userId, loadDashboardData]);
 
-  // ✅ REAL HABIT LOG - Backend sync
   const handleLogHabit = async (habitId, habitTitle) => {
     try {
       const token = await getToken();
       setAuthToken(token);
       await api.post(`/api/habits/${habitId}/log`);
       toast.success(`✅ "${habitTitle}" logged today!`);
-      loadDashboardData(); // Refresh real data
+      loadDashboardData();
     } catch (error) {
       if (error.message.includes('409')) {
         toast.info('Already logged today!');
@@ -97,7 +123,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* ✨ HEADER - Clean no toggle */}
+        {/* ✨ HEADER */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -256,6 +282,26 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </motion.div>
+        </motion.div>
+
+        {/* 🔥 NEW FEATURES SECTION */}
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {/* 🔥 STREAK HEATMAP */}
+          <StreakHeatmap habitLogs={habits.flatMap(h => h.logs || [])} />
+          
+          {/* 🧠 AI INSIGHTS */}
+          <div className="lg:col-span-1">
+            <AIInsights habits={habits} moodLogs={moodLogs} />
+          </div>
+
+          {/* 🏆 SHARE MILESTONE */}
+          {currentStreak > 3 && (
+            <ShareMilestone streak={currentStreak} username="Anuja" />
+          )}
         </motion.div>
       </div>
     </div>
