@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { 
-  TrendingUp, Activity, Target, Flame, Plus, CheckCircle, Zap, User, Award 
+  TrendingUp, Activity, Target, Flame, Plus, CheckCircle, Zap, Crown 
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -25,7 +25,7 @@ export default function Dashboard() {
   const [wellnessScore, setWellnessScore] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 CURRENT STREAK CALCULATION
+  // 🔥 REAL STREAK CALCULATION FROM habit.logs
   const currentStreak = useMemo(() => {
     const allLogs = habits.flatMap(h => h.logs || []);
     const logs = allLogs.map(log => new Date(log.date).toDateString());
@@ -41,7 +41,7 @@ export default function Dashboard() {
     return streak;
   }, [habits]);
 
-  // 🎯 WELLNESS SCORE CALCULATION
+  // 🎯 REAL WELLNESS SCORE FROM today completions
   const calculateWellnessScore = useCallback((habitsData) => {
     if (!Array.isArray(habitsData) || habitsData.length === 0) return 0;
     
@@ -54,7 +54,7 @@ export default function Dashboard() {
     return Math.max(0, Math.min(100, Math.round((completedToday / habitsData.length) * 100)));
   }, []);
 
-  // 🚀 LOAD DATA
+  // 🚀 LOAD REAL DATA FROM YOUR SUPABASE
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
@@ -107,68 +107,71 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-black to-emerald-900/20">
         <motion.div 
           animate={{ rotate: 360 }} 
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-20 h-20 border-4 border-muted-foreground/50 border-t-primary rounded-full shadow-xl"
+          className="w-20 h-20 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full shadow-2xl"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-slate-50/50 to-background p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* ✨ HERO HEADER */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-black to-emerald-900/20 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-12 relative">
+        {/* ⭐ EMERALD PARTICLES */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-24 left-24 w-2 h-2 bg-emerald-400 rounded-full opacity-40 animate-ping" />
+          <div className="absolute top-64 right-32 w-1.5 h-1.5 bg-emerald-300 rounded-full opacity-30 animate-ping" style={{animationDelay: '1.5s'}} />
+          <div className="absolute bottom-40 left-1/2 w-3 h-3 bg-emerald-500 rounded-full opacity-50 animate-pulse" style={{animationDelay: '2.5s'}} />
+        </div>
+
+        {/* 🖤 HERO HEADER */}
         <motion.div
           initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 lg:p-12 shadow-2xl"
+          className="relative backdrop-blur-xl bg-black/60 border border-emerald-500/30 rounded-3xl p-8 lg:p-12 shadow-2xl hover:shadow-emerald-500/20"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right,_var(--tw-gradient-stops))] from-white/20 to-transparent backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent" />
           <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
             <div className="max-w-lg">
               <motion.h1 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-4xl lg:text-6xl font-black text-white/95 mb-4 leading-tight drop-shadow-2xl"
+                className="text-4xl lg:text-6xl font-black bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-500 bg-clip-text text-transparent mb-4 leading-tight drop-shadow-2xl"
               >
-                Welcome Back
-                <span className="block bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 bg-clip-text text-transparent mt-2 text-5xl">
-                  {user?.firstName || 'Anuja'} ✨
+                Elite Dashboard
+                <span className="block text-5xl mt-2">
+                  {user?.firstName || 'Anuja'} 👑
                 </span>
               </motion.h1>
-              <div className="flex flex-wrap items-center gap-4 text-white/90 text-sm">
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-2xl border border-white/20 hover:bg-white/25 transition-all">
-                  <Activity className="w-4 h-4" />
-                  <span className="font-mono">{habits.length} habits</span>
+              <div className="flex flex-wrap items-center gap-4 text-emerald-300/90 font-mono text-lg">
+                <div className="flex items-center gap-2 px-5 py-3 bg-emerald-500/15 backdrop-blur-sm rounded-2xl border border-emerald-400/40 hover:bg-emerald-500/25">
+                  <Activity className="w-5 h-5" />
+                  <span>{habits.length} active habits</span>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-2xl border border-white/20 hover:bg-white/25 transition-all">
-                  <Flame className="w-4 h-4" />
-                  <span className="font-mono font-bold text-orange-300">{currentStreak}d streak</span>
+                <div className="flex items-center gap-2 px-5 py-3 bg-emerald-500/15 backdrop-blur-sm rounded-2xl border border-emerald-400/40 hover:bg-emerald-500/25">
+                  <Flame className="w-5 h-5 text-emerald-400" />
+                  <span className="font-bold">{currentStreak}🔥 streak</span>
                 </div>
               </div>
             </div>
             
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="flex gap-3"
-            >
+            <motion.div whileHover={{ scale: 1.05 }} className="flex gap-4">
               <Button
                 size="lg"
                 onClick={() => window.location.href = '/habits'}
-                className="h-14 px-8 text-lg bg-white/20 backdrop-blur-sm hover:bg-white/30 border-2 border-white/30 shadow-2xl font-bold transition-all"
+                className="h-16 px-10 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 font-bold shadow-2xl shadow-emerald-500/40 hover:shadow-emerald-400/50 border border-emerald-400/50 font-mono tracking-wide text-lg"
               >
                 <Plus className="w-5 h-5 mr-2" />
-                New Habit
+                New Elite Habit
               </Button>
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => window.location.href = '/analytics'}
-                className="h-14 px-8 text-lg border-2 border-white/40 bg-white/10 backdrop-blur-sm hover:bg-white/20 font-bold"
+                className="h-16 px-10 border-2 border-emerald-400/50 bg-emerald-500/10 backdrop-blur-sm hover:bg-emerald-500/20 font-bold font-mono text-emerald-200"
               >
                 📊
               </Button>
@@ -176,151 +179,135 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* 📊 MAIN BENTO GRID */}
+        {/* 📊 BLACK EMERALD BENTO GRID */}
         <motion.div 
-          className="grid grid-cols-1 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 lg:grid-cols-4 gap-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ staggerChildren: 0.1 }}
         >
           
-          {/* 🌀 UPGRADED WELLNESS RING */}
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="lg:col-span-2 h-80 lg:h-96"
-          >
-            <Card className="h-full border-0 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/70 backdrop-blur-sm shadow-2xl hover:shadow-3xl transition-all">
+          {/* 🌀 EMERALD RING - REAL DATA */}
+          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="lg:col-span-2 h-96 lg:h-[28rem]">
+            <Card className="h-full backdrop-blur-xl bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400/50 shadow-2xl hover:shadow-emerald-500/25 rounded-3xl overflow-hidden">
               <CardHeader className="pb-8">
                 <CardTitle className="flex items-center gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-r from-primary to-purple-500 rounded-3xl flex items-center justify-center shadow-2xl">
-                    <TrendingUp className="w-10 h-10 text-white" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-500/50">
+                    <TrendingUp className="w-10 h-10 text-slate-900" />
                   </div>
                   <div>
-                    <h3 className="text-3xl lg:text-4xl font-black bg-gradient-to-r from-foreground via-primary to-purple-600 bg-clip-text text-transparent">
-                      Wellness Score
+                    <h3 className="text-4xl font-black bg-gradient-to-r from-emerald-300 via-emerald-200 to-emerald-400 bg-clip-text text-transparent">
+                      Wellness Matrix
                     </h3>
-                    <p className="text-lg text-muted-foreground font-medium mt-1">Live tracking</p>
+                    <p className="text-emerald-300/80 font-mono text-lg mt-1">Live quantum tracking</p>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-8">
-                <div className="text-center space-y-6">
-                  {/* 🔥 ANIMATED RING */}
-                  <div className="relative mx-auto w-52 h-52 lg:w-64 lg:h-64">
-                    <svg className="w-full h-full -rotate-90 transform origin-center" viewBox="0 0 160 160">
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r="70"
-                        fill="none"
-                        stroke="url(#gradient)"
-                        strokeWidth="12"
-                        strokeLinecap="round"
-                        strokeDasharray="439.6"
-                        strokeDashoffset={439.6 - (wellnessScore * 4.396)}
-                        className="transition-all duration-1000 ease-out"
-                        style={{ filter: 'drop-shadow(0 0 20px rgba(99, 102, 241, 0.5))' }}
-                      />
+                <div className="text-center space-y-8">
+                  {/* 🔥 REAL DATA EMERALD RING */}
+                  <div className="relative mx-auto w-64 h-64 lg:w-80 lg:h-80">
+                    <svg className="w-full h-full transform -rotate-90 origin-center" viewBox="0 0 200 200">
                       <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="hsl(var(--primary))" />
-                          <stop offset="50%" stopColor="#8b5cf6" />
-                          <stop offset="100%" stopColor="#ec4899" />
+                        <linearGradient id="emeraldRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#10b981" />
+                          <stop offset="50%" stopColor="#059669" />
+                          <stop offset="100%" stopColor="#047857" />
                         </linearGradient>
                       </defs>
+                      <circle
+                        cx="100" cy="100" r="85"
+                        fill="none" stroke="url(#emeraldRing)"
+                        strokeWidth="16" strokeLinecap="round"
+                        strokeDasharray="534" 
+                        strokeDashoffset={534 - (wellnessScore * 5.34)}
+                        className="transition-all duration-1500 ease-out origin-center"
+                        style={{ filter: 'drop-shadow(0 0 30px rgba(16, 185, 129, 0.6))' }}
+                      />
                     </svg>
                     <motion.div
                       key={wellnessScore}
-                      initial={{ scale: 0.6, rotate: -180 }}
+                      initial={{ scale: 0, rotate: -180 }}
                       animate={{ scale: 1, rotate: 0 }}
                       className="absolute inset-0 flex items-center justify-center"
                     >
-                      <div className="text-6xl lg:text-7xl font-black bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-2xl">
+                      <div className="text-7xl lg:text-8xl font-black bg-gradient-to-r from-emerald-400 to-emerald-200 bg-clip-text text-transparent drop-shadow-2xl">
                         {wellnessScore}%
                       </div>
                     </motion.div>
                   </div>
                   
-                  {/* 📈 PREDICTION */}
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="space-y-2"
-                  >
+                  <div className="space-y-4">
                     <Progress 
                       value={wellnessScore} 
-                      className="h-4 w-full [&>div]:!bg-gradient-to-r from-primary via-purple-500 to-pink-500 shadow-lg" 
+                      className="h-5 w-full [&>div]:!bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-lg shadow-emerald-500/30" 
                     />
-                    <p className="text-xl font-bold text-foreground">
+                    <div className="text-xl font-mono text-emerald-300">
                       {habits.length === 0 
-                        ? "Create your first habit →" 
-                        : `${habits.length} habits • ${wellnessScore}% today`
+                        ? "Initialize matrix →" 
+                        : `${habits.length} nodes • ${wellnessScore}% matrix`
                       }
-                    </p>
+                    </div>
                     {habits.length > 0 && (
-                      <p className="text-sm bg-emerald-500/10 text-emerald-600 px-4 py-2 rounded-xl font-mono font-bold">
-                        🚀 Next week prediction: {Math.min(100, wellnessScore + 12)}%
-                      </p>
+                      <motion.div 
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="px-6 py-3 bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/50 rounded-2xl font-mono text-emerald-200 shadow-xl"
+                      >
+                        ⚡ Projected: <span className="font-black text-emerald-100">{Math.min(100, wellnessScore + 18)}%</span>
+                      </motion.div>
                     )}
-                  </motion.div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 📈 SENIOR-LEVEL STATS */}
-          <motion.div 
-            initial={{ y: 50, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
-            className="lg:col-span-1 h-80"
-          >
-            <Card className="h-full shadow-xl hover:shadow-2xl transition-all border-0 overflow-hidden">
-              <CardHeader className="pb-6 bg-gradient-to-r from-emerald-500/5 to-blue-500/5">
-                <CardTitle className="flex items-center gap-3 text-2xl font-black">
-                  <Activity className="w-9 h-9 bg-emerald-500 text-white p-2 rounded-2xl shadow-lg" />
-                  <span className="bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-                    Live Stats
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8 space-y-6">
+          {/* 📈 ELITE STATS - REAL DATA */}
+          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="lg:col-span-1 h-80">
+            <Card className="h-full backdrop-blur-xl bg-slate-900/70 border border-emerald-500/20 hover:border-emerald-400/40 shadow-2xl hover:shadow-emerald-500/30 rounded-3xl p-8 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent" />
+              <div className="relative space-y-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/40">
+                    <Activity className="w-7 h-7 text-slate-900" />
+                  </div>
+                  <h3 className="text-2xl font-black text-emerald-300">Matrix Stats</h3>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-6">
-                  <div className="group p-6 bg-gradient-to-br from-emerald-400/10 to-blue-400/10 rounded-3xl border border-emerald-200/30 hover:shadow-xl transition-all cursor-default">
-                    <div className="text-3xl lg:text-4xl font-black text-emerald-500 mb-2">{habits.length}</div>
-                    <div className="text-sm font-mono text-emerald-600 uppercase tracking-wider">Active Habits</div>
+                  <div className="group p-8 bg-emerald-500/10 backdrop-blur-sm rounded-3xl border border-emerald-400/40 hover:bg-emerald-500/20 shadow-lg hover:shadow-emerald-500/25 transition-all">
+                    <div className="text-5xl font-black text-emerald-400 mb-3">{habits.length}</div>
+                    <div className="text-sm font-mono text-emerald-300 uppercase tracking-wider">Active Nodes</div>
                   </div>
-                  <div className="group p-6 bg-gradient-to-br from-orange-400/10 to-red-400/10 rounded-3xl border border-orange-200/30 hover:shadow-xl transition-all cursor-default">
-                    <div className="text-3xl lg:text-4xl font-black text-orange-500 mb-2">{currentStreak}</div>
-                    <div className="text-sm font-mono text-orange-600 uppercase tracking-wider">Day Streak</div>
-                  </div>
-                </div>
-                <div className="p-4 bg-gradient-to-r from-slate-100/50 to-slate-200/50 rounded-2xl border border-slate-200/50 backdrop-blur-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-mono text-muted-foreground">⚡ Productivity</span>
-                    <span className="font-bold text-lg text-primary font-mono">
-                      {Math.round(wellnessScore * 0.9)}%
-                    </span>
+                  <div className="group p-8 bg-emerald-500/10 backdrop-blur-sm rounded-3xl border border-emerald-400/40 hover:bg-emerald-500/20 shadow-lg hover:shadow-emerald-500/25 transition-all">
+                    <div className="text-5xl font-black text-emerald-400 mb-3">{currentStreak}</div>
+                    <div className="text-sm font-mono text-emerald-300 uppercase tracking-wider">Streak Chain</div>
                   </div>
                 </div>
-              </CardContent>
+                
+                <div className="p-5 bg-emerald-500/20 backdrop-blur-sm rounded-2xl border border-emerald-400/40 shadow-lg">
+                  <div className="flex items-center justify-between text-sm font-mono">
+                    <span className="text-emerald-300">⚡ Output Efficiency</span>
+                    <span className="font-black text-emerald-200 text-lg">{Math.round(wellnessScore * 0.92)}%</span>
+                  </div>
+                </div>
+              </div>
             </Card>
           </motion.div>
 
-          {/* 🎯 UPGRADED RECENT HABITS / ONBOARDING */}
-          <motion.div 
-            initial={{ y: 50, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
-            className="lg:col-span-1 h-80"
-          >
-            <Card className="h-full hover:shadow-2xl transition-all">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
-                  <Target className="w-8 h-8 bg-gradient-to-r from-orange-400 to-red-400 text-white p-2 rounded-2xl shadow-md" />
-                  <span>Today's Priorities</span>
+          {/* 🎯 PRIORITY MATRIX - REAL HABITS */}
+          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="lg:col-span-1 h-80">
+            <Card className="h-full backdrop-blur-xl bg-slate-900/70 border border-emerald-500/20 hover:border-emerald-400/40 shadow-2xl hover:shadow-emerald-500/30 rounded-3xl overflow-hidden">
+              <CardHeader className="pb-6 bg-emerald-500/5">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/40">
+                    <Target className="w-6 h-6 text-slate-900" />
+                  </div>
+                  <span className="font-black text-xl text-emerald-300">Priority Matrix</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-4">
+              <CardContent className="p-6 space-y-4 max-h-72 overflow-y-auto">
                 {habits.length === 0 ? (
                   <motion.div 
                     initial={{ scale: 0.9, opacity: 0 }}
@@ -328,72 +315,56 @@ export default function Dashboard() {
                     className="h-full flex flex-col items-center justify-center text-center py-12 space-y-6"
                   >
                     <motion.div 
-                      animate={{ 
-                        scale: [1, 1.1, 1], 
-                        rotate: [0, 5, -5, 0] 
-                      }}
-                      transition={{ 
-                        scale: { duration: 2, repeat: Infinity },
-                        rotate: { duration: 3, repeat: Infinity }
-                      }}
-                      className="w-24 h-24 bg-gradient-to-r from-primary to-purple-500 rounded-3xl flex items-center justify-center shadow-2xl mb-6"
+                      animate={{ scale: [1, 1.1, 1], rotate: [0, 3, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 3 }}
+                      className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-500/50 mb-6"
                     >
-                      <Plus className="w-12 h-12 text-white" />
+                      <Plus className="w-12 h-12 text-slate-900" />
                     </motion.div>
-                    <div>
-                      <h3 className="text-3xl font-black bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent mb-4">
-                        Launch Your Journey
-                      </h3>
-                      <p className="text-xl text-muted-foreground mb-8 max-w-sm leading-relaxed">
-                        Track hydration, sleep, meditation. 
-                        <br />
-                        <span className="font-mono text-sm text-emerald-600">3 habits → 30% productivity boost</span>
-                      </p>
-                    </div>
+                    <h3 className="text-3xl font-black text-emerald-300 mb-4">Initialize System</h3>
+                    <p className="text-emerald-400/90 text-lg font-mono mb-8 max-w-sm">
+                      Deploy 3 core habits → 35% efficiency gain
+                    </p>
                     <Button 
                       size="lg"
                       onClick={() => window.location.href = '/habits'}
-                      className="h-16 px-12 text-xl bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 shadow-2xl font-bold"
+                      className="h-14 px-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 shadow-2xl shadow-emerald-500/40 font-bold font-mono tracking-wide text-lg"
                     >
-                      🚀 First Habit
+                      DEPLOY CORE
                     </Button>
                   </motion.div>
                 ) : (
-                  <div className="max-h-72 overflow-y-auto space-y-3">
+                  <div className="space-y-3">
                     {habits.slice(0, 5).map((habit, index) => (
                       <motion.div
                         key={habit.id}
-                        initial={{ x: -20, opacity: 0 }}
+                        initial={{ x: -30, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: index * 0.05 }}
-                        whileHover={{ scale: 1.02, y: -2 }}
-                        className="group flex items-center p-4 rounded-3xl bg-gradient-to-r from-muted/50 to-card hover:from-primary/5 border hover:border-primary/30 transition-all shadow-sm hover:shadow-md"
+                        transition={{ delay: index * 0.08 }}
+                        whileHover={{ scale: 1.02, y: -3 }}
+                        className="group flex items-center p-5 bg-emerald-500/10 backdrop-blur-sm hover:bg-emerald-500/20 border border-emerald-400/40 hover:border-emerald-400/60 rounded-2xl shadow-lg hover:shadow-emerald-500/30 transition-all duration-300"
                       >
-                        <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                        <div className={`w-4 h-4 rounded-full shadow-lg flex-shrink-0 transition-all ${
                           habit.loggedToday 
-                            ? 'bg-emerald-400 shadow-lg shadow-emerald-400/25' 
-                            : 'bg-gradient-to-r from-orange-400 to-red-400 shadow-lg'
+                            ? 'bg-emerald-400 shadow-emerald-400/50 scale-110' 
+                            : 'bg-gradient-to-r from-orange-400/80 to-red-400/80 shadow-orange-400/30'
                         }`} />
-                        <div className="flex-1 min-w-0 ml-3">
-                          <h4 className="font-bold text-lg text-foreground truncate group-hover:text-primary transition-colors">
+                        <div className="flex-1 min-w-0 ml-4">
+                          <h4 className="font-bold text-lg text-emerald-200 truncate group-hover:text-emerald-100 transition-all">
                             {habit.title}
                           </h4>
-                          <p className="text-xs font-mono text-muted-foreground capitalize">{habit.category}</p>
+                          <p className="text-xs font-mono text-emerald-300/80 capitalize">{habit.category}</p>
                         </div>
                         <Button
                           onClick={() => handleLogHabit(habit.id, habit.title)}
                           size="sm"
-                          className={`ml-3 h-10 px-4 rounded-2xl font-mono shadow-lg transition-all ${
+                          className={`ml-4 h-11 px-6 rounded-xl font-mono font-bold shadow-lg transition-all ${
                             habit.loggedToday
-                              ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25'
-                              : 'bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 shadow-primary/25'
+                              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900 shadow-emerald-500/40 scale-105'
+                              : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 shadow-emerald-500/40'
                           }`}
                         >
-                          {habit.loggedToday ? (
-                            <CheckCircle className="w-4 h-4" />
-                          ) : (
-                            'Log'
-                          )}
+                          {habit.loggedToday ? 'SECURED' : 'EXECUTE'}
                         </Button>
                       </motion.div>
                     ))}
@@ -404,7 +375,7 @@ export default function Dashboard() {
           </motion.div>
         </motion.div>
 
-        {/* 🔥 SENIOR-LEVEL INSIGHTS SECTION */}
+        {/* 🔥 ELITE INSIGHTS - REAL DATA */}
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-16"
           initial={{ opacity: 0, y: 40 }}
