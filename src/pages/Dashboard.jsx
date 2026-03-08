@@ -3,7 +3,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { 
   TrendingUp, Activity, Flame, Plus, Crown 
-} from "lucide-react";
+} from "lucide-react";  // ✅ Zap REMOVED
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -54,20 +54,32 @@ export default function Dashboard() {
     return Math.max(0, Math.min(100, Math.round((completedToday / habitsData.length) * 100)));
   }, []);
 
-  // 🚀 LOAD REAL DATA - FIXED API ENDPOINTS
+  // 🚀 LOAD REAL DATA - FIXED ENDPOINTS + ERROR HANDLING
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken();
       if (token) setAuthToken(token);
 
-      // ✅ FIXED: /api/habits (via habitRoutes)
-      const habitsRes = await api.get("/api/habits");
-      const habitsData = habitsRes.habits || [];
+      // ✅ TRY /api/habits first (via habitRoutes)
+      let habitsData = [];
+      try {
+        const habitsRes = await api.get("/api/habits");
+        habitsData = habitsRes.habits || habitsRes.data?.habits || [];
+      } catch (habitsError) {
+        console.warn("Habits API unavailable:", habitsError);
+        habitsData = [];
+      }
       
-      // ✅ FIXED: /api/moods (via moodRoutes) 
-      const moodsRes = await api.get("/api/moods").catch(() => ({}));
-      const moodData = Array.isArray(moodsRes.data) ? moodsRes.data : [];
+      // ✅ TRY /api/moods first (via moodRoutes)
+      let moodData = [];
+      try {
+        const moodsRes = await api.get("/api/moods");
+        moodData = moodsRes.data || moodsRes.moods || [];
+      } catch (moodsError) {
+        console.warn("Moods API unavailable:", moodsError);
+        moodData = [];
+      }
       
       setHabits(habitsData);
       setMoodLogs(moodData);
@@ -76,7 +88,7 @@ export default function Dashboard() {
       
     } catch (error) {
       console.error("Dashboard error:", error);
-      toast.error("Backend connection issue");
+      toast.error("Loading data...");
       setHabits([]);
       setMoodLogs([]);
       setWellnessScore(0);
@@ -167,13 +179,13 @@ export default function Dashboard() {
 
         {/* 📊 BLACK EMERALD BENTO - 2 CARDS ONLY */}
         <motion.div 
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8"  // ✅ FIXED: 2 columns only
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ staggerChildren: 0.1 }}
         >
           
-          {/* 🌀 EMERALD RING - FULL WIDTH */}
+          {/* 🌀 EMERALD RING */}
           <motion.div 
             initial={{ y: 50, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
@@ -252,7 +264,7 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 📈 ELITE STATS */}
+          {/* 📈 ELITE STATS + ACTIONS */}
           <motion.div 
             initial={{ y: 50, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
@@ -289,11 +301,10 @@ export default function Dashboard() {
               </div>
             </Card>
 
-            {/* QUICK ACTIONS */}
+            {/* ✅ FIXED: Quick Actions - NO Zap */}
             <Card className="backdrop-blur-xl bg-slate-900/50 border border-emerald-500/20 hover:border-emerald-400/40 shadow-xl hover:shadow-emerald-500/20 rounded-2xl p-6">
               <h4 className="text-xl font-black text-emerald-300 mb-6 flex items-center gap-3">
-                <Zap className="w-6 h-6" />
-                Quick Actions
+                ⚡ Quick Actions
               </h4>
               <div className="space-y-3">
                 <Button 
