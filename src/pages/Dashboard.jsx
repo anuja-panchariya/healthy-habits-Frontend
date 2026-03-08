@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { 
-  TrendingUp, Activity, Target, Flame, Plus, CheckCircle, Zap, Crown 
+  TrendingUp, Activity, Flame, Plus, Crown 
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -25,7 +25,7 @@ export default function Dashboard() {
   const [wellnessScore, setWellnessScore] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 REAL STREAK CALCULATION FROM habit.logs
+  // 🔥 REAL STREAK CALCULATION
   const currentStreak = useMemo(() => {
     const allLogs = habits.flatMap(h => h.logs || []);
     const logs = allLogs.map(log => new Date(log.date).toDateString());
@@ -41,7 +41,7 @@ export default function Dashboard() {
     return streak;
   }, [habits]);
 
-  // 🎯 REAL WELLNESS SCORE FROM today completions
+  // 🎯 REAL WELLNESS SCORE
   const calculateWellnessScore = useCallback((habitsData) => {
     if (!Array.isArray(habitsData) || habitsData.length === 0) return 0;
     
@@ -54,17 +54,19 @@ export default function Dashboard() {
     return Math.max(0, Math.min(100, Math.round((completedToday / habitsData.length) * 100)));
   }, []);
 
-  // 🚀 LOAD REAL DATA FROM YOUR SUPABASE
+  // 🚀 LOAD REAL DATA - FIXED API ENDPOINTS
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken();
       if (token) setAuthToken(token);
 
+      // ✅ FIXED: /api/habits (via habitRoutes)
       const habitsRes = await api.get("/api/habits");
       const habitsData = habitsRes.habits || [];
       
-      const moodsRes = await api.get("/api/mood").catch(() => ({}));
+      // ✅ FIXED: /api/moods (via moodRoutes) 
+      const moodsRes = await api.get("/api/moods").catch(() => ({}));
       const moodData = Array.isArray(moodsRes.data) ? moodsRes.data : [];
       
       setHabits(habitsData);
@@ -88,22 +90,6 @@ export default function Dashboard() {
       loadDashboardData();
     }
   }, [userId, loadDashboardData]);
-
-  const handleLogHabit = async (habitId, habitTitle) => {
-    try {
-      const token = await getToken();
-      setAuthToken(token);
-      await api.post(`/api/habits/${habitId}/log`);
-      toast.success(`✅ "${habitTitle}" logged!`);
-      loadDashboardData();
-    } catch (error) {
-      if (error.message.includes('409')) {
-        toast.info('Already logged today!');
-      } else {
-        toast.error('Log failed');
-      }
-    }
-  };
 
   if (loading) {
     return (
@@ -179,16 +165,20 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* 📊 BLACK EMERALD BENTO GRID */}
+        {/* 📊 BLACK EMERALD BENTO - 2 CARDS ONLY */}
         <motion.div 
-          className="grid grid-cols-1 lg:grid-cols-4 gap-8"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8"  // ✅ FIXED: 2 columns only
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ staggerChildren: 0.1 }}
         >
           
-          {/* 🌀 EMERALD RING - REAL DATA */}
-          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="lg:col-span-2 h-96 lg:h-[28rem]">
+          {/* 🌀 EMERALD RING - FULL WIDTH */}
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            className="h-96 lg:h-[28rem]"
+          >
             <Card className="h-full backdrop-blur-xl bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400/50 shadow-2xl hover:shadow-emerald-500/25 rounded-3xl overflow-hidden">
               <CardHeader className="pb-8">
                 <CardTitle className="flex items-center gap-4">
@@ -205,7 +195,6 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="p-8">
                 <div className="text-center space-y-8">
-                  {/* 🔥 REAL DATA EMERALD RING */}
                   <div className="relative mx-auto w-64 h-64 lg:w-80 lg:h-80">
                     <svg className="w-full h-full transform -rotate-90 origin-center" viewBox="0 0 200 200">
                       <defs>
@@ -263,9 +252,14 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 📈 ELITE STATS - REAL DATA */}
-          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="lg:col-span-1 h-80">
-            <Card className="h-full backdrop-blur-xl bg-slate-900/70 border border-emerald-500/20 hover:border-emerald-400/40 shadow-2xl hover:shadow-emerald-500/30 rounded-3xl p-8 overflow-hidden">
+          {/* 📈 ELITE STATS */}
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            className="space-y-8"
+          >
+            {/* STATS CARD */}
+            <Card className="backdrop-blur-xl bg-slate-900/70 border border-emerald-500/20 hover:border-emerald-400/40 shadow-2xl hover:shadow-emerald-500/30 rounded-3xl p-8 overflow-hidden h-80">
               <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent" />
               <div className="relative space-y-8">
                 <div className="flex items-center gap-3">
@@ -294,88 +288,35 @@ export default function Dashboard() {
                 </div>
               </div>
             </Card>
-          </motion.div>
 
-          {/* 🎯 PRIORITY MATRIX - REAL HABITS */}
-          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="lg:col-span-1 h-80">
-            <Card className="h-full backdrop-blur-xl bg-slate-900/70 border border-emerald-500/20 hover:border-emerald-400/40 shadow-2xl hover:shadow-emerald-500/30 rounded-3xl overflow-hidden">
-              <CardHeader className="pb-6 bg-emerald-500/5">
-                <CardTitle className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/40">
-                    <Target className="w-6 h-6 text-slate-900" />
-                  </div>
-                  <span className="font-black text-xl text-emerald-300">Priority Matrix</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4 max-h-72 overflow-y-auto">
-                {habits.length === 0 ? (
-                  <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="h-full flex flex-col items-center justify-center text-center py-12 space-y-6"
-                  >
-                    <motion.div 
-                      animate={{ scale: [1, 1.1, 1], rotate: [0, 3, -3, 0] }}
-                      transition={{ repeat: Infinity, duration: 3 }}
-                      className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-500/50 mb-6"
-                    >
-                      <Plus className="w-12 h-12 text-slate-900" />
-                    </motion.div>
-                    <h3 className="text-3xl font-black text-emerald-300 mb-4">Initialize System</h3>
-                    <p className="text-emerald-400/90 text-lg font-mono mb-8 max-w-sm">
-                      Deploy 3 core habits → 35% efficiency gain
-                    </p>
-                    <Button 
-                      size="lg"
-                      onClick={() => window.location.href = '/habits'}
-                      className="h-14 px-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 shadow-2xl shadow-emerald-500/40 font-bold font-mono tracking-wide text-lg"
-                    >
-                      DEPLOY CORE
-                    </Button>
-                  </motion.div>
-                ) : (
-                  <div className="space-y-3">
-                    {habits.slice(0, 5).map((habit, index) => (
-                      <motion.div
-                        key={habit.id}
-                        initial={{ x: -30, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: index * 0.08 }}
-                        whileHover={{ scale: 1.02, y: -3 }}
-                        className="group flex items-center p-5 bg-emerald-500/10 backdrop-blur-sm hover:bg-emerald-500/20 border border-emerald-400/40 hover:border-emerald-400/60 rounded-2xl shadow-lg hover:shadow-emerald-500/30 transition-all duration-300"
-                      >
-                        <div className={`w-4 h-4 rounded-full shadow-lg flex-shrink-0 transition-all ${
-                          habit.loggedToday 
-                            ? 'bg-emerald-400 shadow-emerald-400/50 scale-110' 
-                            : 'bg-gradient-to-r from-orange-400/80 to-red-400/80 shadow-orange-400/30'
-                        }`} />
-                        <div className="flex-1 min-w-0 ml-4">
-                          <h4 className="font-bold text-lg text-emerald-200 truncate group-hover:text-emerald-100 transition-all">
-                            {habit.title}
-                          </h4>
-                          <p className="text-xs font-mono text-emerald-300/80 capitalize">{habit.category}</p>
-                        </div>
-                        <Button
-                          onClick={() => handleLogHabit(habit.id, habit.title)}
-                          size="sm"
-                          className={`ml-4 h-11 px-6 rounded-xl font-mono font-bold shadow-lg transition-all ${
-                            habit.loggedToday
-                              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900 shadow-emerald-500/40 scale-105'
-                              : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 shadow-emerald-500/40'
-                          }`}
-                        >
-                          {habit.loggedToday ? 'SECURED' : 'EXECUTE'}
-                        </Button>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
+            {/* QUICK ACTIONS */}
+            <Card className="backdrop-blur-xl bg-slate-900/50 border border-emerald-500/20 hover:border-emerald-400/40 shadow-xl hover:shadow-emerald-500/20 rounded-2xl p-6">
+              <h4 className="text-xl font-black text-emerald-300 mb-6 flex items-center gap-3">
+                <Zap className="w-6 h-6" />
+                Quick Actions
+              </h4>
+              <div className="space-y-3">
+                <Button 
+                  size="sm" 
+                  className="w-full h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 font-bold shadow-lg shadow-emerald-500/30 font-mono"
+                  onClick={() => window.location.href = '/habits'}
+                >
+                  ➕ Manage Habits
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm" 
+                  className="w-full h-12 border-emerald-400/50 bg-emerald-500/10 hover:bg-emerald-500/20 font-mono text-emerald-200"
+                  onClick={() => window.location.href = '/moods'}
+                >
+                  😊 Log Mood
+                </Button>
+              </div>
             </Card>
           </motion.div>
         </motion.div>
 
-        {/* 🔥 ELITE INSIGHTS - REAL DATA */}
+        {/* 🔥 ELITE INSIGHTS */}
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-16"
           initial={{ opacity: 0, y: 40 }}
