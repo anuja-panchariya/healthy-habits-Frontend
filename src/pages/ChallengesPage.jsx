@@ -58,13 +58,7 @@ export default function ChallengesPage() {
       progress: 78,
       streak: 7
     },
-    {
-      rank: 4,
-      name: 'Sneha Gupta',
-      avatar: '👩‍🎨',
-      progress: 65,
-      streak: 5
-    }
+  
   ];
 
   const loadChallenges = useCallback(async () => {
