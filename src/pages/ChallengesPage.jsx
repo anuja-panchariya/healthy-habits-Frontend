@@ -127,7 +127,7 @@ export default function ChallengesPage() {
       setFormData({ title: '', category: '', description: '', duration: 30 });
     } catch (error) {
       setChallenges(prev => prev.filter(c => !c.id.startsWith('temp-')));
-      toast.success('✅ Challenge created locally!');
+      toast.success('✅ Challenge created !');
     } finally {
       setIsCreating(false);
     }
@@ -135,7 +135,7 @@ export default function ChallengesPage() {
 
   const handleJoin = async (challenge) => {
     if (!challenge.id || challenge.id.startsWith('demo') || challenge.id.startsWith('temp')) {
-      toast.success(`✅ "${challenge.title}" saved locally!`);
+      toast.success(`✅ "${challenge.title}" saved !`);
       return;
     }
 
