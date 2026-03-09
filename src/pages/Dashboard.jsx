@@ -132,7 +132,7 @@ export default function Dashboard() {
           transition={{ staggerChildren: 0.1 }}
         >
           
-          {/* 🌀 MAIN WELLNESS CARD */}
+          {/* 🌀 MAIN WELLNESS CARD - SAME */}
           <motion.div
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -174,84 +174,118 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* 📈 QUICK STATS */}
+          {/* ✅ FIXED QUICK STATS - Perfect UI */}
           <motion.div 
             initial={{ y: 50, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
             className="lg:col-span-1 h-80"
           >
-            <Card className="h-full hover:shadow-xl bg-card">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl font-bold text-foreground">
-                  <Activity className="w-8 h-8 text-primary" />
+            <Card className="h-full hover:shadow-xl bg-gradient-to-br from-card via-card/50 to-muted/30 border border-border/50">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl font-bold text-foreground">
+                  <Activity className="w-7 h-7 text-primary bg-primary/10 p-2 rounded-xl" />
                   Quick Stats
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-8 space-y-6">
+              <CardContent className="p-6 space-y-6 pt-2">
                 <div className="space-y-6">
-                  <div className="flex justify-between items-center p-4 bg-muted rounded-2xl">
-                    <span className="text-muted-foreground font-semibold text-lg">Total Habits</span>
-                    <span className="text-3xl font-black text-foreground">{habits.length}</span>
+                  {/* Total Habits */}
+                  <div className="group p-6 bg-gradient-to-r from-muted/50 to-muted rounded-3xl border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-default">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground font-mono text-sm uppercase tracking-wider font-medium">Total Habits</span>
+                      <Zap className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <div className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+                      {habits.length || 0}
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center p-4 bg-muted rounded-2xl">
-                    <span className="text-muted-foreground font-semibold text-lg">Today Complete</span>
-                    <span className="text-3xl font-black text-primary">{wellnessScore}%</span>
+                  
+                  {/* Today Complete */}
+                  <div className="group p-6 bg-gradient-to-r from-muted/50 to-muted rounded-3xl border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-default">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground font-mono text-sm uppercase tracking-wider font-medium">Today Complete</span>
+                      <Flame className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <div className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+                      {wellnessScore}%
+                    </div>
                   </div>
-                  <Progress value={wellnessScore} className="h-3 [&>div]:!bg-primary" />
+                  
+                  <Progress value={wellnessScore} className="h-3 [&>div]:!bg-gradient-to-r from-primary to-primary/80 rounded-full" />
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 🎯 RECENT HABITS */}
+          {/* ✅ FIXED RECENT HABITS - Perfect Empty State */}
           <motion.div 
             initial={{ y: 50, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
             className="lg:col-span-1 h-80"
           >
-            <Card className="h-full hover:shadow-xl bg-card">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl font-bold text-foreground">
-                  <Target className="w-8 h-8 text-primary" />
+            <Card className="h-full hover:shadow-xl bg-gradient-to-br from-card via-card/50 to-muted/30 border border-border/50">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl font-bold text-foreground">
+                  <Target className="w-7 h-7 text-primary bg-primary/10 p-2 rounded-xl" />
                   Recent Habits
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 max-h-72 overflow-y-auto space-y-4">
+              <CardContent className="p-6 pt-2 space-y-4">
                 {habits.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                    <div className="text-5xl mb-6 opacity-50">🎯</div>
-                    <h3 className="text-2xl font-bold text-foreground mb-4">No habits yet</h3>
-                    <p className="text-muted-foreground mb-8 text-lg">Start your wellness journey</p>
+                  <div className="h-full flex flex-col items-center justify-center text-center py-8 space-y-6">
+                    <motion.div 
+                      animate={{ scale: [1, 1.1, 1] }} 
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="w-20 h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl flex items-center justify-center shadow-xl"
+                    >
+                      <Target className="w-10 h-10 text-primary/70" />
+                    </motion.div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-foreground mb-2 leading-tight">No habits yet</h3>
+                      <p className="text-muted-foreground text-lg font-medium max-w-[200px]">
+                        Start your wellness journey
+                      </p>
+                    </div>
                     <Button 
                       onClick={() => window.location.href = '/habits'}
-                      className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 shadow-lg"
+                      className="h-12 px-8 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 shadow-xl font-semibold border-0"
                     >
                       <Plus className="w-5 h-5 mr-2" />
-                      Create Habit
+                      Start Tracking
                     </Button>
                   </div>
                 ) : (
-                  habits.slice(0, 5).map((habit) => (
-                    <motion.div
-                      key={habit.id}
-                      whileHover={{ scale: 1.02 }}
-                      className="group flex items-center justify-between p-4 rounded-2xl bg-muted hover:bg-muted/80 border border-border hover:border-primary/50 transition-all"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-lg text-foreground truncate group-hover:text-primary">
-                          {habit.title}
-                        </h4>
-                        <p className="text-sm text-muted-foreground capitalize">{habit.category}</p>
-                      </div>
-                      <Button
-                        onClick={() => handleLogHabit(habit.id, habit.title)}
-                        size="sm"
-                        className="ml-4 bg-primary hover:bg-primary/90 h-10 px-4 rounded-xl shadow-md"
+                  <div className="max-h-72 overflow-y-auto space-y-3 pr-2">
+                    {habits.slice(0, 5).map((habit, index) => (
+                      <motion.div
+                        key={habit.id}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ scale: 1.02 }}
+                        className="group flex items-center justify-between p-5 rounded-2xl bg-gradient-to-r from-muted/50 to-muted hover:from-primary/10 hover:to-primary/5 border border-border hover:border-primary/40 transition-all shadow-sm hover:shadow-md"
                       >
-                        <CheckCircle className="w-4 h-4" />
-                      </Button>
-                    </motion.div>
-                  ))
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-lg text-foreground truncate group-hover:text-primary leading-tight">
+                            {habit.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground capitalize font-medium mt-1 truncate">
+                            {habit.category || 'General'}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLogHabit(habit.id, habit.title);
+                          }}
+                          size="sm"
+                          className="ml-4 h-11 px-6 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-md font-semibold border-0 text-sm"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
