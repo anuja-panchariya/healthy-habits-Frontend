@@ -97,7 +97,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* ✨ HEADER - Clean no toggle */}
+        {/* ✨ HEADER - NO NEW HABIT BUTTON */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -114,17 +114,9 @@ export default function Dashboard() {
               </span>
             </p>
           </div>
-          
-          <Button
-            onClick={() => window.location.href = '/habits'}
-            className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 shadow-lg text-lg font-semibold"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            New Habit
-          </Button>
         </motion.div>
 
-        {/* 📊 MAIN BENTO GRID */}
+        {/* 📊 MAIN BENTO GRID - ALL BOXES SAME HEIGHT */}
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-4 gap-6"
           initial={{ opacity: 0, y: 20 }}
@@ -174,88 +166,86 @@ export default function Dashboard() {
             </Card>
           </motion.div>
 
-          {/* ✅ FIXED QUICK STATS - Perfect UI */}
+          {/* ✅ FIXED QUICK STATS - BIGGER + PROPER TEXT */}
           <motion.div 
             initial={{ y: 50, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
-            className="lg:col-span-1 h-80"
+            className="lg:col-span-1 h-80 lg:h-96"  // SAME HEIGHT AS WELLNESS
           >
-            <Card className="h-full hover:shadow-xl bg-gradient-to-br from-card via-card/50 to-muted/30 border border-border/50">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl font-bold text-foreground">
-                  <Activity className="w-7 h-7 text-primary bg-primary/10 p-2 rounded-xl" />
-                  Quick Stats
+            <Card className="h-full hover:shadow-xl border-0 bg-gradient-to-br from-card to-muted">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
+                    <Activity className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-bold text-foreground">Quick Stats</h3>
+                    <p className="text-muted-foreground font-medium">Today overview</p>
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6 pt-2">
-                <div className="space-y-6">
-                  {/* Total Habits */}
-                  <div className="group p-6 bg-gradient-to-r from-muted/50 to-muted rounded-3xl border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-default">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-muted-foreground font-mono text-sm uppercase tracking-wider font-medium">Total Habits</span>
-                      <Zap className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
-                    <div className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-                      {habits.length || 0}
-                    </div>
+              <CardContent className="p-8 space-y-8">
+                <div className="space-y-6 text-center">
+                  <div className="p-6 bg-muted/50 rounded-3xl border border-border/50">
+                    <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider mb-3">Total Habits</p>
+                    <div className="text-5xl font-black text-foreground">{habits.length}</div>
                   </div>
                   
-                  {/* Today Complete */}
-                  <div className="group p-6 bg-gradient-to-r from-muted/50 to-muted rounded-3xl border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-default">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-muted-foreground font-mono text-sm uppercase tracking-wider font-medium">Today Complete</span>
-                      <Flame className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
-                    <div className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-                      {wellnessScore}%
-                    </div>
+                  <div className="p-6 bg-muted/50 rounded-3xl border border-border/50">
+                    <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider mb-3">Today Complete</p>
+                    <div className="text-5xl font-black text-primary">{wellnessScore}%</div>
                   </div>
                   
-                  <Progress value={wellnessScore} className="h-3 [&>div]:!bg-gradient-to-r from-primary to-primary/80 rounded-full" />
+                  <Progress value={wellnessScore} className="h-6 [&>div]:!bg-gradient-to-r from-primary to-primary/80" />
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* ✅ FIXED RECENT HABITS - Perfect Empty State */}
+          {/* ✅ FIXED RECENT HABITS - BIGGER + START TRACKING */}
           <motion.div 
             initial={{ y: 50, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
-            className="lg:col-span-1 h-80"
+            className="lg:col-span-1 h-80 lg:h-96"  // SAME HEIGHT AS WELLNESS
           >
-            <Card className="h-full hover:shadow-xl bg-gradient-to-br from-card via-card/50 to-muted/30 border border-border/50">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl font-bold text-foreground">
-                  <Target className="w-7 h-7 text-primary bg-primary/10 p-2 rounded-xl" />
-                  Recent Habits
+            <Card className="h-full hover:shadow-xl border-0 bg-gradient-to-br from-card to-muted">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
+                    <Target className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-bold text-foreground">Recent Habits</h3>
+                    <p className="text-muted-foreground font-medium">Latest activity</p>
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 pt-2 space-y-4">
+              <CardContent className="p-8">
                 {habits.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center py-8 space-y-6">
+                  <div className="h-full flex flex-col items-center justify-center text-center space-y-6 py-8">
                     <motion.div 
                       animate={{ scale: [1, 1.1, 1] }} 
                       transition={{ repeat: Infinity, duration: 2 }}
-                      className="w-20 h-20 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl flex items-center justify-center shadow-xl"
+                      className="w-24 h-24 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl flex items-center justify-center shadow-xl"
                     >
-                      <Target className="w-10 h-10 text-primary/70" />
+                      <Target className="w-12 h-12 text-primary/70" />
                     </motion.div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-foreground mb-2 leading-tight">No habits yet</h3>
-                      <p className="text-muted-foreground text-lg font-medium max-w-[200px]">
-                        Start your wellness journey
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold text-foreground mb-2">No habits yet</h3>
+                      <p className="text-muted-foreground text-lg font-medium max-w-[250px] mx-auto leading-relaxed">
+                        Start your wellness journey with your first habit
                       </p>
                     </div>
                     <Button 
-                      onClick={() => window.location.href = '/habits'}
-                      className="h-12 px-8 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 shadow-xl font-semibold border-0"
+                      onClick={() => window.location.href = '/habits'}  // ✅ REDIRECT TO HABITS
+                      className="h-14 px-12 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 shadow-xl font-semibold text-lg"
                     >
-                      <Plus className="w-5 h-5 mr-2" />
+                      <Plus className="w-5 h-5 mr-3" />
                       Start Tracking
                     </Button>
                   </div>
                 ) : (
-                  <div className="max-h-72 overflow-y-auto space-y-3 pr-2">
+                  <div className="max-h-72 overflow-y-auto space-y-4 pr-2">
                     {habits.slice(0, 5).map((habit, index) => (
                       <motion.div
                         key={habit.id}
