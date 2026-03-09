@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // ✅ FIXED: AnimatePresence added
 import { api, setAuthToken } from '../lib/api';
 import { toast } from 'sonner';
 import { 
-  Trophy, Plus, Users, Zap, Crown, Sparkles, User 
+  Trophy, Plus, Users, Zap, Crown, Sparkles, User, Flame 
 } from 'lucide-react';
 import { 
   Button 
@@ -25,7 +25,7 @@ import {
 export default function ChallengesPage() {
   const { getToken, user } = useAuth();
   const [challenges, setChallenges] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]); // ✅ SEPARATE LEADERBOARD
+  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,18 +36,18 @@ export default function ChallengesPage() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  // 🎯 LOAD CHALLENGES + LEADERBOARD
+  // 🎯 LOAD CHALLENGES + LEADERBOARD - 404 SAFE
   const loadChallenges = useCallback(async () => {
     try {
       setLoading(true);
-      const token = await getToken();
+      const token = await getToken(); // ✅ FIXED: No supabase template
       if (token) setAuthToken(token);
 
-      // ✅ Backend challenges
+      // Backend challenges (404 safe)
       const challengesRes = await api.get('/api/challenges').catch(() => ({}));
       const challengesData = Array.isArray(challengesRes.data) ? challengesRes.data : [];
 
-      // ✅ Backend leaderboard  
+      // Backend leaderboard (404 safe)  
       const leaderboardRes = await api.get('/api/challenges/leaderboard').catch(() => ({}));
       const leaderboardData = Array.isArray(leaderboardRes.data) ? leaderboardRes.data.slice(0, 5) : [];
 
@@ -57,12 +57,12 @@ export default function ChallengesPage() {
     } catch (error) {
       console.warn('Backend unavailable, using smart demo:', error);
       
-      // ✅ SMART DEMO - NO DUPLICATES!
+      // ✅ SMART DEMO DATA - Works without backend!
       setChallenges([
         {
           id: 'hydration-30d',
           title: '30 Day Hydration Challenge 💧',
-          description: '8 glasses water daily',
+          description: 'Drink 8 glasses of water daily for 30 days',
           participants_count: 127,
           duration: 30,
           category: 'health',
@@ -71,7 +71,7 @@ export default function ChallengesPage() {
         {
           id: 'walk-challenge',
           title: 'Daily 10K Steps 🏃',
-          description: 'Walk 10,000 steps every day',
+          description: 'Walk 10,000 steps every single day',
           participants_count: 89,
           duration: 30,
           category: 'fitness',
@@ -80,7 +80,7 @@ export default function ChallengesPage() {
         {
           id: 'meditation-21d',
           title: '21 Day Meditation 🧘',
-          description: '10 minutes mindfulness daily',
+          description: '10 minutes mindfulness meditation daily',
           participants_count: 203,
           duration: 21,
           category: 'mental_health',
@@ -88,7 +88,7 @@ export default function ChallengesPage() {
         }
       ]);
 
-      // ✅ DIVERSE LEADERBOARD - Real users!
+      // ✅ DIVERSE LEADERBOARD - No duplicates!
       setLeaderboard([
         {
           rank: 1,
@@ -102,7 +102,7 @@ export default function ChallengesPage() {
         {
           rank: 2,
           user_id: 'leader2', 
-          username: `${user?.firstName || 'Anuja'} P.`, // ✅ Your real name
+          username: `${user?.firstName || 'Anuja'} P.`,
           avatar: '👩‍💻',
           progress: 87,
           streak: 25,
@@ -139,7 +139,7 @@ export default function ChallengesPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.firstName]);
+  }, [user?.firstName, getToken]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -163,7 +163,7 @@ export default function ChallengesPage() {
     setIsCreating(true);
 
     try {
-      const token = await getToken();
+      const token = await getToken(); // ✅ FIXED: No template
       if (token) setAuthToken(token);
       const res = await api.post('/api/challenges', formData);
       
@@ -174,13 +174,12 @@ export default function ChallengesPage() {
       setFormData({ title: '', category: '', description: '', duration: 30 });
     } catch (error) {
       setChallenges(prev => prev.filter(c => !c.id.startsWith('temp-')));
-      toast.success('✅ Created locally!');
+      toast.success('✅ Created locally - Backend later!');
     } finally {
       setIsCreating(false);
     }
   };
 
-  // ✅ FIXED JOIN - Safe challenge object
   const handleJoin = async (challenge) => {
     if (!challenge?.id) {
       toast.error('Invalid challenge');
@@ -188,17 +187,17 @@ export default function ChallengesPage() {
     }
 
     try {
-      const token = await getToken();
+      const token = await getToken(); // ✅ FIXED: No template
       if (token) setAuthToken(token);
       
       await api.post(`/api/challenges/${challenge.id}/join`);
       toast.success(`✅ Joined "${challenge.title}"!`);
-      loadChallenges(); // Refresh counts
+      loadChallenges();
     } catch (error) {
       if (error.response?.status === 409) {
-        toast.info('Already joined!');
+        toast.info('Already joined this challenge!');
       } else {
-        toast.success(`⭐ "${challenge.title}" favorited!`);
+        toast.success(`⭐ "${challenge.title}" favorited locally!`);
       }
     }
   };
@@ -235,7 +234,7 @@ export default function ChallengesPage() {
                 Live Challenges
               </h1>
               <p className={`text-xl font-mono ${challenges.length > 0 ? 'text-emerald-300' : 'text-emerald-400/70'}`}>
-                {challenges.length} active • Join thousands crushing goals
+                {challenges.length} active • Join thousands crushing goals together
               </p>
             </div>
             <Button
@@ -244,35 +243,36 @@ export default function ChallengesPage() {
               className="h-14 px-8 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 shadow-2xl shadow-emerald-500/40 font-bold font-mono"
             >
               <Plus className="w-5 h-5 mr-2" />
-              {showAddForm ? 'Cancel' : 'Create'}
+              {showAddForm ? 'Cancel' : 'Create Challenge'}
             </Button>
           </div>
         </motion.div>
 
-        {/* CREATE FORM */}
+        {/* ✅ CREATE FORM - AnimatePresence FIXED */}
         <AnimatePresence>
           {showAddForm && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
               className="bg-slate-900/70 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-8 shadow-2xl"
             >
               <form onSubmit={handleCreate} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <label className="text-emerald-300 font-mono text-sm uppercase tracking-wider">Title *</label>
+                  <label className="text-emerald-300 font-mono text-sm uppercase tracking-wider">Challenge Title *</label>
                   <Input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="30 Day Hydration Challenge"
-                    className="h-14 bg-slate-800/50 border-emerald-500/30 focus:border-emerald-400 text-emerald-200"
+                    className="h-14 bg-slate-800/50 border-emerald-500/30 focus:border-emerald-400 text-emerald-200 placeholder-emerald-400"
                   />
                 </div>
                 <div className="space-y-3">
                   <label className="text-emerald-300 font-mono text-sm uppercase tracking-wider">Category *</label>
                   <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
-                    <SelectTrigger className="h-14 bg-slate-800/50 border-emerald-500/30">
-                      <SelectValue />
+                    <SelectTrigger className="h-14 bg-slate-800/50 border-emerald-500/30 focus:border-emerald-400">
+                      <SelectValue placeholder="Choose category" />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-emerald-500/30">
                       <SelectItem value="health">💧 Health</SelectItem>
@@ -287,9 +287,9 @@ export default function ChallengesPage() {
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Challenge details..."
+                    placeholder="What habit will participants conquer together?"
                     rows={3}
-                    className="bg-slate-800/50 border-emerald-500/30 focus:border-emerald-400 text-emerald-200 resize-none"
+                    className="bg-slate-800/50 border-emerald-500/30 focus:border-emerald-400 text-emerald-200 resize-none placeholder-emerald-400"
                   />
                 </div>
                 <div className="lg:col-span-2 space-y-3">
@@ -300,18 +300,18 @@ export default function ChallengesPage() {
                     onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
                     min={7}
                     max={90}
-                    className="h-14 bg-slate-800/50 border-emerald-500/30 w-32"
+                    className="h-14 bg-slate-800/50 border-emerald-500/30 w-32 text-emerald-200"
                   />
                 </div>
                 <div className="lg:col-span-2 flex gap-4 pt-4">
-                  <Button type="submit" disabled={isCreating} className="flex-1 h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 shadow-2xl shadow-emerald-500/40 font-bold font-mono">
+                  <Button type="submit" disabled={isCreating} className="flex-1 h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 shadow-2xl shadow-emerald-500/40 font-bold font-mono text-slate-900">
                     {isCreating ? '🚀 Launching...' : '🚀 Launch Challenge'}
                   </Button>
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={() => setShowAddForm(false)}
-                    className="h-14 px-8 border-emerald-500/50 font-mono"
+                    className="h-14 px-8 border-emerald-500/50 hover:bg-emerald-500/10 font-mono text-emerald-300"
                   >
                     Cancel
                   </Button>
@@ -321,71 +321,79 @@ export default function ChallengesPage() {
           )}
         </AnimatePresence>
 
-        {/* 🏆 CHALLENGES + LEADERBOARD */}
+        {/* 🏆 CHALLENGES + LEADERBOARD GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* LIVE CHALLENGES */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
             <Card className="h-[520px] backdrop-blur-xl bg-slate-900/70 border-emerald-500/30 shadow-2xl rounded-3xl overflow-hidden">
-              <CardHeader className="pb-6 bg-emerald-500/5">
+              <CardHeader className="pb-6 bg-emerald-500/5 border-b border-emerald-500/20">
                 <CardTitle className="flex items-center gap-3 text-2xl font-black text-emerald-300">
                   <Trophy className="w-8 h-8 text-yellow-400 shadow-lg" />
                   Live Challenges ({challenges.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0 h-[420px] overflow-y-auto">
+              <CardContent className="p-0 h-[420px] overflow-y-auto custom-scrollbar">
                 <div className="p-6 space-y-4">
-                  {challenges.map((challenge, idx) => (
-                    <motion.div
-                      key={challenge.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="group p-6 bg-slate-800/50 hover:bg-emerald-500/10 border border-emerald-400/30 hover:border-emerald-400/50 rounded-3xl shadow-xl hover:shadow-emerald-500/25 transition-all backdrop-blur-sm"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-black text-xl mb-2 bg-gradient-to-r from-emerald-400 to-emerald-200 bg-clip-text text-transparent truncate group-hover:scale-[1.02] transition-transform">
-                            {challenge.title}
-                          </h3>
-                          <p className="text-emerald-300 text-sm mb-4 line-clamp-2 leading-relaxed">
-                            {challenge.description}
-                          </p>
-                          <div className="flex items-center gap-6 text-xs text-emerald-400 mb-4 font-mono">
-                            <span className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              {challenge.participants_count || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Zap className="w-4 h-4" />
-                              {challenge.duration} days
-                            </span>
+                  {challenges.length === 0 ? (
+                    <div className="text-center py-16 opacity-60">
+                      <Trophy className="w-20 h-20 mx-auto mb-4 text-emerald-400" />
+                      <p className="text-emerald-300 font-mono">No active challenges yet</p>
+                    </div>
+                  ) : (
+                    challenges.map((challenge, idx) => (
+                      <motion.div
+                        key={challenge.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="group p-6 bg-slate-800/50 hover:bg-emerald-500/10 border border-emerald-400/30 hover:border-emerald-400/50 rounded-3xl shadow-xl hover:shadow-emerald-500/25 transition-all backdrop-blur-sm cursor-pointer"
+                        onClick={() => handleJoin(challenge)}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-black text-xl mb-2 bg-gradient-to-r from-emerald-400 to-emerald-200 bg-clip-text text-transparent truncate group-hover:scale-[1.02] transition-transform">
+                              {challenge.title}
+                            </h3>
+                            <p className="text-emerald-300 text-sm mb-4 line-clamp-2 leading-relaxed">
+                              {challenge.description}
+                            </p>
+                            <div className="flex items-center gap-6 text-xs text-emerald-400 mb-4 font-mono">
+                              <span className="flex items-center gap-1">
+                                <Users className="w-4 h-4" />
+                                {challenge.participants_count || 0} joined
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Zap className="w-4 h-4" />
+                                {challenge.duration} days
+                              </span>
+                            </div>
+                            <div className="w-full bg-slate-800/50 h-3 rounded-full overflow-hidden border border-emerald-400/30">
+                              <motion.div 
+                                className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full shadow-lg"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${challenge.progress || 50}%` }}
+                                transition={{ duration: 0.8 }}
+                              />
+                            </div>
                           </div>
-                          <div className="w-full bg-slate-800/50 h-3 rounded-full overflow-hidden border border-emerald-400/30">
-                            <motion.div 
-                              className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full shadow-lg"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${challenge.progress || 50}%` }}
-                              transition={{ duration: 0.8 }}
-                            />
-                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 shadow-2xl shadow-emerald-500/40 h-12 px-6 font-bold font-mono whitespace-nowrap flex-shrink-0 ml-2"
+                          >
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Join Now
+                          </Button>
                         </div>
-                        <Button
-                          onClick={() => handleJoin(challenge)}
-                          size="sm"
-                          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-900 shadow-2xl shadow-emerald-500/40 h-12 px-6 font-bold font-mono whitespace-nowrap flex-shrink-0"
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Join
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* 🏅 LEADERBOARD - NO DUPLICATES! */}
+          {/* 🏅 LEADERBOARD */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
             <Card className="h-[520px] backdrop-blur-xl bg-slate-900/70 border-emerald-500/30 shadow-2xl rounded-3xl overflow-hidden">
               <CardHeader className="pb-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-b border-yellow-500/20">
@@ -397,10 +405,10 @@ export default function ChallengesPage() {
               <CardContent className="p-6 space-y-4 pt-0">
                 
                 {/* STATS */}
-                <div className="grid grid-cols-2 gap-4 mb-8 p-6 bg-emerald-500/5 border border-emerald-400/20 rounded-3xl">
+                <div className="grid grid-cols-2 gap-4 mb-8 p-6 bg-emerald-500/5 border border-emerald-400/20 rounded-3xl backdrop-blur-sm">
                   <div className="text-center">
                     <div className="text-3xl lg:text-4xl font-black text-emerald-400 mb-2">{challenges.length}</div>
-                    <div className="text-sm font-mono text-emerald-300 uppercase tracking-wider">Challenges</div>
+                    <div className="text-sm font-mono text-emerald-300 uppercase tracking-wider">Active Challenges</div>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl lg:text-4xl font-black text-emerald-400 mb-2">
@@ -410,15 +418,15 @@ export default function ChallengesPage() {
                   </div>
                 </div>
 
-                {/* ✅ DIVERSE RANKINGS */}
-                <div className="space-y-3 max-h-64 overflow-y-auto">
+                {/* RANKINGS */}
+                <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
                   {leaderboard.map((user, idx) => (
                     <motion.div
                       key={user.user_id}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       className="group flex items-center p-4 bg-slate-800/50 hover:bg-emerald-500/10 border border-emerald-400/30 hover:border-emerald-400/50 rounded-2xl shadow-lg hover:shadow-emerald-500/25 transition-all cursor-pointer"
-                      onClick={() => toast.success(`View ${user.username}'s profile!`)}
+                      onClick={() => toast.success(`View ${user.username}'s profile! 👀`)}
                     >
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shadow-lg flex-shrink-0 ${
                         idx === 0 
@@ -432,7 +440,7 @@ export default function ChallengesPage() {
                       
                       <div className="flex-1 min-w-0 ml-4">
                         <div className="flex items-center gap-3 mb-1">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center shadow-md">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center shadow-md text-sm">
                             {user.avatar}
                           </div>
                           <div className="min-w-0">
@@ -441,16 +449,16 @@ export default function ChallengesPage() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-emerald-400 font-mono">{user.progress}%</span>
+                          <span className="text-emerald-400 font-mono">{user.progress}% complete</span>
                           <span className="flex items-center gap-1 text-emerald-300">
-                            <Flame className="w-3 h-3" />
-                            {user.streak}d
+                            <Flame className="w-3 h-3 fill-emerald-400" />
+                            {user.streak}d streak
                           </span>
                         </div>
                       </div>
                       
                       <div className="text-right ml-4">
-                        <div className="text-2xl font-black text-emerald-400">{user.points}</div>
+                        <div className="text-2xl font-black text-emerald-400">{user.points.toLocaleString()}</div>
                         <div className="text-xs text-emerald-500 font-mono">PTS</div>
                       </div>
                     </motion.div>
@@ -461,6 +469,23 @@ export default function ChallengesPage() {
           </motion.div>
         </div>
       </div>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(15, 23, 42, 0.5);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(16, 185, 129, 0.6);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(16, 185, 129, 0.8);
+        }
+      `}</style>
     </div>
   );
 }
