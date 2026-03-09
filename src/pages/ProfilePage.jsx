@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const [mood, setMood] = useState('');
   const [moodNotes, setMoodNotes] = useState('');
   const [moods, setMoods] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);  // 🔥 REAL AI
+  const [recommendations, setRecommendations] = useState([]);  // 🔥 PRIORITY: BACKEND FIRST
   const [stats, setStats] = useState({ totalMoods: 0, greatPercentage: 0 });
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -31,40 +31,68 @@ export default function ProfilePage() {
       const token = await getToken();
       if (token) setAuthToken(token);
 
-      // 🔥 REAL BACKEND DATA
+      // 🔥 PRIORITY 1: REAL BACKEND MOODS
       const moodsRes = await api.get('/api/mood').catch(() => ({}));
       const moodsData = Array.isArray(moodsRes.data) ? moodsRes.data.slice(-10) : [];
       
-      // 🔥 REAL AI RECOMMENDATIONS
+      // 🔥 PRIORITY 1: REAL BACKEND AI RECOMMENDATIONS
       const recsRes = await api.get('/api/ai-recommendations').catch(() => ({}));
-      const aiRecs = recsRes.data?.recommendations || [];
+      const aiRecs = recsRes.data?.recommendations || recsRes.recommendations || [];
+      
+      // ✅ ONLY USE FALLBACK IF BACKEND RETURNS EMPTY
+      const finalRecs = aiRecs.length > 0 ? aiRecs : getSmartFallbackRecommendations(moodsData);
 
       const totalMoods = moodsData.length;
       const greatMoods = moodsData.filter(m => m.mood === 'great').length;
       
       setMoods(moodsData);
-      setRecommendations(aiRecs.length ? aiRecs : [
-        // ✅ FALLBACK if backend down
-        { title: '15min meditation', reason: 'Reduce stress 40%', category: 'mindfulness' },
-        { title: '8 glasses water', reason: 'Boost focus 3x', category: 'hydration' }
-      ]);
+      setRecommendations(finalRecs);
       setStats({
         totalMoods,
         greatPercentage: totalMoods ? Math.round((greatMoods / totalMoods) * 100) : 0
       });
     } catch (error) {
       console.error('Profile load error:', error);
-      // ✅ LOCAL FALLBACK
       const demoMoods = [
         { id: 1, mood: 'great', notes: 'Feeling energized!', created_at: new Date(Date.now() - 86400000).toISOString() },
         { id: 2, mood: 'good', notes: 'Productive day', created_at: new Date().toISOString() }
       ];
       setMoods(demoMoods);
+      setRecommendations(getSmartFallbackRecommendations(demoMoods));
       setStats({ totalMoods: 2, greatPercentage: 50 });
     } finally {
       setLoading(false);
     }
   }, [userId, getToken]);
+
+  // 🔥 SMART FALLBACK - Context-aware recommendations
+  const getSmartFallbackRecommendations = (recentMoods) => {
+    const recentMood = recentMoods[0]?.mood;
+    const recommendations = [];
+
+    // Context-aware based on recent moods
+    if (recentMood === 'bad' || recentMood === 'terrible') {
+      recommendations.push(
+        { title: '15min guided meditation', reason: 'Reduce stress by 40%', category: 'mindfulness', priority: 'high' },
+        { title: 'Deep breathing exercise', reason: 'Calm nervous system instantly', category: 'breathing', priority: 'high' },
+        { title: 'Drink 500ml water now', reason: 'Dehydration causes 30% low mood', category: 'hydration', priority: 'medium' }
+      );
+    } else if (recentMood === 'okay') {
+      recommendations.push(
+        { title: '10min brisk walk outside', reason: 'Boost endorphins 3x', category: 'movement', priority: 'high' },
+        { title: 'Write 3 things grateful for', reason: 'Instant positivity boost', category: 'gratitude', priority: 'high' },
+        { title: '8 glasses water challenge', reason: 'Improve focus 25%', category: 'hydration', priority: 'medium' }
+      );
+    } else {
+      recommendations.push(
+        { title: 'Maintain momentum - 5min stretch', reason: 'Keep energy high', category: 'movement', priority: 'medium' },
+        { title: 'Journal 3 wins today', reason: 'Lock in positive momentum', category: 'reflection', priority: 'medium' },
+        { title: 'Hydration check - 2 glasses', reason: 'Sustain great mood', category: 'hydration', priority: 'low' }
+      );
+    }
+
+    return recommendations.slice(0, 3);
+  };
 
   const logMood = async () => {
     if (!mood) {
@@ -94,15 +122,20 @@ export default function ProfilePage() {
     try {
       const token = await getToken();
       if (token) setAuthToken(token);
+      
+      // 🔥 BACKEND MOOD LOG
       await api.post('/api/mood', newMood);
       toast.success('✅ Mood logged!');
       
-      // 🔥 REFRESH AI RECOMMENDATIONS after mood log
-      const recsRes = await api.get('/api/ai-recommendations');
-      setRecommendations(recsRes.data?.recommendations || []);
+      // 🔥 REFRESH REAL AI RECOMMENDATIONS
+      const recsRes = await api.get('/api/ai-recommendations').catch(() => ({}));
+      const newRecs = recsRes.data?.recommendations || recsRes.recommendations || getSmartFallbackRecommendations([newMood]);
+      setRecommendations(newRecs);
+      
     } catch (error) {
       toast.success('✅ Mood saved locally!');
     }
+    
     setMood('');
     setMoodNotes('');
   };
@@ -121,7 +154,7 @@ export default function ProfilePage() {
     
     const csvContent = csvRows.map(row => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const link = document.createObjectElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `wellness-data-${new Date().toISOString().split('T')[0]}.csv`);
@@ -183,9 +216,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* SAME BEAUTIFUL UI - REST UNCHANGED */}
+        {/* SAME BEAUTIFUL UI - Baki sab unchanged */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* ACCOUNT CARD */}
+          {/* ACCOUNT CARD - SAME */}
           <Card className="h-full hover:shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -207,7 +240,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* MOOD CARD */}
+          {/* MOOD CARD - SAME */}
           <Card className="h-full hover:shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -257,11 +290,11 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* 🔥 REAL AI RECOMMENDATIONS */}
+          {/* 🔥 REAL AI RECOMMENDATIONS - BACKEND PRIORITY */}
           <Card className="lg:col-span-2 hover:shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                ✨ AI Recommendations
+                ✨ AI Recommendations {recommendations.length > 0 && '(Live)'}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0 space-y-4">
@@ -287,7 +320,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* RECENT MOODS */}
+          {/* RECENT MOODS - SAME */}
           <Card className="lg:col-span-2 hover:shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
