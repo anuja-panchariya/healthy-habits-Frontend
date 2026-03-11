@@ -35,7 +35,16 @@ export default function ChallengesPage() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  // 🔥 LOCALSTORAGE FUNCTIONS (from Habits pattern)
+  // 🔥 STATIC LEADERBOARD - NO API (100% NO 404s)
+  const leaderboard = [
+    { rank: 1, name: user?.fullName || 'Anuja Panchariya', progress: 92, streak: 12 },
+    { rank: 2, name: 'Priya Sharma', progress: 87, streak: 9 },
+    { rank: 3, name: 'Rahul Patel', progress: 78, streak: 7 },
+    { rank: 4, name: 'Sneha Gupta', progress: 65, streak: 5 },
+    { rank: 5, name: 'Vikram Singh', progress: 58, streak: 4 }
+  ];
+
+  // 🔥 LOCALSTORAGE FUNCTIONS
   const saveToStorage = useCallback((data) => {
     try {
       localStorage.setItem('wellness_challenges', JSON.stringify(data));
@@ -54,7 +63,7 @@ export default function ChallengesPage() {
     }
   }, []);
 
-  // 🔥 LOAD CHALLENGES (Habits logic + Storage)
+  // 🔥 LOAD CHALLENGES (Habits pattern)
   const loadChallenges = useCallback(async () => {
     try {
       setLoading(true);
@@ -65,16 +74,14 @@ export default function ChallengesPage() {
       const realData = Array.isArray(res.data) ? res.data : [];
       
       setChallenges(realData);
-      saveToStorage(realData); // 🔥 SAVE TO STORAGE
+      saveToStorage(realData);
     } catch (error) {
       console.error('Load challenges error:', error);
       
-      // 🔥 LOAD FROM STORAGE FIRST (like Habits fallback)
       const stored = loadFromStorage();
       if (stored.length > 0) {
         setChallenges(stored);
       } else {
-        // Demo fallback
         const demoData = [
           {
             id: 'demo1',
@@ -99,15 +106,7 @@ export default function ChallengesPage() {
     }
   }, [getToken, saveToStorage, loadFromStorage]);
 
-  // 🔥 NO API LEADERBOARD - DIRECT DATA (no 404s)
-  const [leaderboard] = useState([
-    { rank: 1, name: user?.fullName || 'Anuja Panchariya', progress: 92, streak: 12 },
-    { rank: 2, name: 'Priya Sharma', progress: 87, streak: 9 },
-    { rank: 3, name: 'Rahul Patel', progress: 78, streak: 7 },
-    { rank: 4, name: 'Sneha Gupta', progress: 65, streak: 5 }
-  ]);
-
-  // 🔥 CREATE CHALLENGE (Habits logic exactly)
+  // 🔥 CREATE CHALLENGE (exact Habits logic)
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.category) {
@@ -115,7 +114,6 @@ export default function ChallengesPage() {
       return;
     }
 
-    // 🔥 TEMP HABIT FIRST (like Habits)
     const tempId = `temp-${Date.now()}`;
     const tempChallenge = {
       id: tempId,
@@ -127,7 +125,7 @@ export default function ChallengesPage() {
       created_at: new Date().toISOString()
     };
 
-    // 🔥 INSTANT ADD + SAVE TO STORAGE
+    // 🔥 INSTANT ADD + STORAGE
     setChallenges(prev => {
       const updated = [tempChallenge, ...prev];
       saveToStorage(updated);
@@ -143,7 +141,6 @@ export default function ChallengesPage() {
       const res = await api.post('/api/challenges', formData);
       const realChallenge = res.data || { ...tempChallenge, id: res.id || tempId };
       
-      // 🔥 UPDATE REAL DATA
       setChallenges(prev => {
         const updated = prev.map(c => c.id === tempId ? realChallenge : c);
         saveToStorage(updated);
@@ -152,7 +149,6 @@ export default function ChallengesPage() {
       
       toast.success(`🎉 "${formData.title}" created LIVE!`);
     } catch (error) {
-      // 🔥 KEEP TEMP DATA (like Habits)
       toast.success('✅ Challenge saved locally!');
     } finally {
       setIsCreating(false);
@@ -161,7 +157,6 @@ export default function ChallengesPage() {
     }
   };
 
-  // 🔥 JOIN CHALLENGE (skip temp IDs)
   const handleJoin = async (challenge) => {
     if (challenge.id.startsWith('temp-')) {
       toast.success(`✅ "${challenge.title}" favorited locally!`);
@@ -356,7 +351,7 @@ export default function ChallengesPage() {
               </CardContent>
             </Card>
 
-            {/* LEADERBOARD - NO API */}
+            {/* LEADERBOARD - STATIC DATA (NO API!) */}
             <Card className="h-[500px]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -396,7 +391,7 @@ export default function ChallengesPage() {
                             ? 'bg-gradient-to-r from-[#CD7F32] to-[#B8860B] text-black'
                             : 'bg-muted/50 text-foreground'
                         }`}>
-                          #{userData.rank || (i + 1)}
+                          #{userData.rank}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-sm truncate group-hover:text-primary">
