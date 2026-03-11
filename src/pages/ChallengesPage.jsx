@@ -71,7 +71,6 @@ export default function ChallengesPage() {
     } catch (error) {
       console.error('Load challenges error:', error);
       
-      // 🔥 PRIORITY: STORAGE > API > DEMO
       const stored = loadFromStorage();
       if (stored.length > 0) {
         setChallenges(stored);
@@ -114,15 +113,18 @@ export default function ChallengesPage() {
     }
   }, [getToken, saveToStorage, loadFromStorage]);
 
-  // 🔥 LOAD LEADERBOARD
+  // 🔥 FIXED LEADERBOARD - SKIP TEMP IDs
   const loadLeaderboard = useCallback(async () => {
     try {
       setLeaderboardLoading(true);
+      
+      // 🔥 KEY FIX: Skip temp IDs, use real challenge ID first
+      const realChallengeId = challenges.find(c => !c.id.startsWith('temp-'))?.id || 'demo1';
+      
       const token = await getToken();
       if (token) setAuthToken(token);
 
-      const challengeId = challenges[0]?.id || 'demo1';
-      const res = await api.get(`/api/challenges/${challengeId}/leaderboard`);
+      const res = await api.get(`/api/challenges/${realChallengeId}/leaderboard`);
       setLeaderboard(res.data || []);
     } catch (error) {
       console.error('Leaderboard error:', error);
@@ -156,7 +158,6 @@ export default function ChallengesPage() {
       created_at: new Date().toISOString()
     };
     
-    // 🔥 INSTANT SAVE TO STORAGE
     setChallenges(prev => {
       const updated = [tempChallenge, ...prev];
       saveToStorage(updated);
@@ -172,7 +173,6 @@ export default function ChallengesPage() {
       const res = await api.post('/api/challenges', formData);
       const realChallenge = res.data || tempChallenge;
       
-      // 🔥 UPDATE REAL DATA IN STORAGE
       setChallenges(prev => {
         const updated = prev.map(c => c.id === tempId ? realChallenge : c);
         saveToStorage(updated);
@@ -206,7 +206,6 @@ export default function ChallengesPage() {
     }
   };
 
-  // 🔥 ON MOUNT: STORAGE FIRST, THEN API SYNC
   useEffect(() => {
     const storedChallenges = loadFromStorage();
     if (storedChallenges.length > 0) {
