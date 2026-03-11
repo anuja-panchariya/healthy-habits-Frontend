@@ -37,7 +37,26 @@ export default function ChallengesPage() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  // 🔥 LOAD REAL CHALLENGES
+  // 🔥 LOCALSTORAGE PERSISTENCE
+  const saveToStorage = useCallback((data) => {
+    try {
+      localStorage.setItem('wellness_challenges', JSON.stringify(data));
+    } catch (e) {
+      console.error('Storage save error:', e);
+    }
+  }, []);
+
+  const loadFromStorage = useCallback(() => {
+    try {
+      const saved = localStorage.getItem('wellness_challenges');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Storage load error:', e);
+      return [];
+    }
+  }, []);
+
+  // 🔥 LOAD CHALLENGES WITH PERSISTENCE
   const loadChallenges = useCallback(async () => {
     try {
       setLoading(true);
@@ -45,45 +64,68 @@ export default function ChallengesPage() {
       if (token) setAuthToken(token);
 
       const challengesRes = await api.get('/api/challenges');
-      setChallenges(Array.isArray(challengesRes.data) ? challengesRes.data : []);
+      const realData = Array.isArray(challengesRes.data) ? challengesRes.data : [];
+      
+      setChallenges(realData);
+      saveToStorage(realData);
     } catch (error) {
       console.error('Load challenges error:', error);
-      // Fallback demo
-      setChallenges([
-        {
-          id: 'demo1',
-          title: '30 Day Hydration Challenge',
-          description: 'Drink 8 glasses of water daily',
-          participants_count: 23,
-          duration: 30
-        },
-        {
-          id: 'demo2', 
-          title: 'Daily Walk Challenge',
-          description: '30 minutes walking every day',
-          participants_count: 12,
-          duration: 30
-        }
-      ]);
+      
+      // 🔥 PRIORITY: STORAGE > API > DEMO
+      const stored = loadFromStorage();
+      if (stored.length > 0) {
+        setChallenges(stored);
+      } else {
+        setChallenges([
+          {
+            id: 'demo1',
+            title: '30 Day Hydration Challenge',
+            description: 'Drink 8 glasses of water daily',
+            participants_count: 23,
+            duration: 30
+          },
+          {
+            id: 'demo2', 
+            title: 'Daily Walk Challenge',
+            description: '30 minutes walking every day',
+            participants_count: 12,
+            duration: 30
+          }
+        ]);
+        saveToStorage([
+          {
+            id: 'demo1',
+            title: '30 Day Hydration Challenge',
+            description: 'Drink 8 glasses of water daily',
+            participants_count: 23,
+            duration: 30
+          },
+          {
+            id: 'demo2', 
+            title: 'Daily Walk Challenge',
+            description: '30 minutes walking every day',
+            participants_count: 12,
+            duration: 30
+          }
+        ]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [getToken, saveToStorage, loadFromStorage]);
 
-  // 🔥 LOAD REAL LEADERBOARD
+  // 🔥 LOAD LEADERBOARD
   const loadLeaderboard = useCallback(async () => {
     try {
       setLeaderboardLoading(true);
       const token = await getToken();
       if (token) setAuthToken(token);
 
-      // Use first challenge ID or demo
       const challengeId = challenges[0]?.id || 'demo1';
       const res = await api.get(`/api/challenges/${challengeId}/leaderboard`);
       setLeaderboard(res.data || []);
     } catch (error) {
       console.error('Leaderboard error:', error);
-      // Realistic fallback
       setLeaderboard([
         { rank: 1, name: user?.fullName || 'Anuja Panchariya', progress: 92, streak: 12 },
         { rank: 2, name: 'Priya Sharma', progress: 87, streak: 9 },
@@ -95,6 +137,7 @@ export default function ChallengesPage() {
     }
   }, [getToken, user, challenges]);
 
+  // 🔥 CREATE WITH PERSISTENCE
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.category) {
@@ -113,7 +156,13 @@ export default function ChallengesPage() {
       created_at: new Date().toISOString()
     };
     
-    setChallenges(prev => [tempChallenge, ...prev]);
+    // 🔥 INSTANT SAVE TO STORAGE
+    setChallenges(prev => {
+      const updated = [tempChallenge, ...prev];
+      saveToStorage(updated);
+      return updated;
+    });
+    
     setIsCreating(true);
 
     try {
@@ -123,16 +172,20 @@ export default function ChallengesPage() {
       const res = await api.post('/api/challenges', formData);
       const realChallenge = res.data || tempChallenge;
       
-      setChallenges(prev => prev.map(c => c.id === tempId ? realChallenge : c));
-      toast.success(`🎉 "${formData.title}" created LIVE!`);
+      // 🔥 UPDATE REAL DATA IN STORAGE
+      setChallenges(prev => {
+        const updated = prev.map(c => c.id === tempId ? realChallenge : c);
+        saveToStorage(updated);
+        return updated;
+      });
       
-      setShowAddForm(false);
-      setFormData({ title: '', category: '', description: '', duration: 30 });
+      toast.success(`🎉 "${formData.title}" created LIVE!`);
     } catch (error) {
-      setChallenges(prev => prev.filter(c => !c.id.startsWith('temp-')));
-      toast.success('✅ Challenge created locally!');
+      toast.success('✅ Challenge saved locally!');
     } finally {
       setIsCreating(false);
+      setShowAddForm(false);
+      setFormData({ title: '', category: '', description: '', duration: 30 });
     }
   };
 
@@ -143,8 +196,6 @@ export default function ChallengesPage() {
       
       await api.post(`/api/challenges/${challenge.id}/join`);
       toast.success(`✅ Joined "${challenge.title}"!`);
-      
-      // Refresh leaderboard
       loadLeaderboard();
     } catch (error) {
       if (error.response?.status === 409) {
@@ -155,10 +206,14 @@ export default function ChallengesPage() {
     }
   };
 
-  // 🔥 LOAD ALL DATA ON MOUNT
+  // 🔥 ON MOUNT: STORAGE FIRST, THEN API SYNC
   useEffect(() => {
+    const storedChallenges = loadFromStorage();
+    if (storedChallenges.length > 0) {
+      setChallenges(storedChallenges);
+    }
     loadChallenges();
-  }, [loadChallenges]);
+  }, [loadChallenges, loadFromStorage]);
 
   useEffect(() => {
     if (challenges.length > 0) {
@@ -271,7 +326,7 @@ export default function ChallengesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 🔥 LIVE CHALLENGES - REAL DATA */}
+            {/* LIVE CHALLENGES */}
             <Card className="h-[500px]">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
@@ -330,7 +385,7 @@ export default function ChallengesPage() {
               </CardContent>
             </Card>
 
-            {/* 🔥 REAL LEADERBOARD - DB CONNECTED */}
+            {/* LEADERBOARD */}
             <Card className="h-[500px]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -353,7 +408,7 @@ export default function ChallengesPage() {
                   </div>
                 </div>
                 
-                {/* 🔥 REAL LEADERBOARD */}
+                {/* LEADERBOARD */}
                 <div className="space-y-3 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-muted">
                   {leaderboard.map((userData, i) => (
                     <motion.div 
